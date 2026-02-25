@@ -6,8 +6,12 @@ import { ExcelJobPayload, JobKind, RssJobPayload } from "@/jobs/types";
 
 export function ensureWorkerStarted() {
   void jobManager.start((kind) => {
-    if (kind === "rss") return runRssJob;
-    return runExcelJob;
+    if (kind === "rss") {
+      return async ({ payload, updateProgress }) =>
+        runRssJob({ payload: payload as RssJobPayload, updateProgress });
+    }
+    return async ({ payload, updateProgress }) =>
+      runExcelJob({ payload: payload as ExcelJobPayload, updateProgress });
   });
 }
 
