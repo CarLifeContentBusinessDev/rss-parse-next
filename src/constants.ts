@@ -1,0 +1,26 @@
+﻿import { DEFAULT_SYNC_OPTIONS } from "@/config/syncRuntime";
+
+export const SHEET_NAME = DEFAULT_SYNC_OPTIONS.sheetName;
+export const COUNTRY_CODE = DEFAULT_SYNC_OPTIONS.countryCode;
+export const LANGUAGELIST = DEFAULT_SYNC_OPTIONS.languageList;
+export const TYPE = DEFAULT_SYNC_OPTIONS.programType;
+export const MODE = DEFAULT_SYNC_OPTIONS.mode;
+export const EPISODE_LIMIT = DEFAULT_SYNC_OPTIONS.episodeLimit;
+export const DOWNLOAD_FILES = DEFAULT_SYNC_OPTIONS.downloadFiles;
+export const DOWNLOAD_LIMIT = DEFAULT_SYNC_OPTIONS.downloadLimit;
+export const IMAGE_TARGET_MAX_KB = DEFAULT_SYNC_OPTIONS.imageTargetMaxKb;
+export const EXCEL_HEADER_SKIP = DEFAULT_SYNC_OPTIONS.excelHeaderSkip;
+export const MIN_RANK = DEFAULT_SYNC_OPTIONS.minRank;
+export const MAX_RANK = DEFAULT_SYNC_OPTIONS.maxRank;
+export const SYNC_CATEGORY = DEFAULT_SYNC_OPTIONS.syncCategory;
+export const GLOBAL_CATEGORY_ID = DEFAULT_SYNC_OPTIONS.globalCategoryId;
+export const SYNC_THEMES = DEFAULT_SYNC_OPTIONS.syncThemes;
+export const PROGRAMS_TABLE = DEFAULT_SYNC_OPTIONS.tables.programs;
+export const PROGRAMS_CATEGORIES_TABLE =
+  DEFAULT_SYNC_OPTIONS.tables.programsCategories;
+export const EPISODES_TABLE = DEFAULT_SYNC_OPTIONS.tables.episodes;
+export const THEMES_PROGRAMS_TABLE = DEFAULT_SYNC_OPTIONS.tables.themesPrograms;
+export const SKIP_DUPLICATES = true;
+export const THEME_ID = DEFAULT_SYNC_OPTIONS.themeId;
+export const RSS_URL = "https://example.com/rss";
+
