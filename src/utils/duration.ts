@@ -3,8 +3,8 @@ export function formatDateYYMMDD(pubDate?: string) {
 
   const d = new Date(pubDate);
   const yy = String(d.getUTCFullYear()).slice(2);
-  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
+  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(d.getUTCDate()).padStart(2, '0');
 
   return `${yy}.${mm}.${dd}`;
 }
@@ -24,35 +24,31 @@ export function formatDuration(duration?: string) {
     const seconds = totalSeconds % 60;
 
     if (hours > 0) {
-      return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 
-    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   }
 
   const match = normalized.match(/^(\d{1,2}:){1,2}\d{1,2}$/);
   if (!match) return null;
 
-  const parts = normalized.split(":");
-  if (parts.length === 3 && parts[0] === "00") {
-    const [, rawMm = "0", rawSs = "0"] = parts;
-    return `${rawMm.padStart(2, "0")}:${rawSs.padStart(2, "0")}`;
+  const parts = normalized.split(':');
+  if (parts.length === 3 && parts[0] === '00') {
+    const [, rawMm = '0', rawSs = '0'] = parts;
+    return `${rawMm.padStart(2, '0')}:${rawSs.padStart(2, '0')}`;
   }
 
   if (parts.length === 2) {
-    const [rawMm = "0", rawSs = "0"] = parts;
-    return `${rawMm.padStart(2, "0")}:${rawSs.padStart(2, "0")}`;
+    const [rawMm = '0', rawSs = '0'] = parts;
+    return `${rawMm.padStart(2, '0')}:${rawSs.padStart(2, '0')}`;
   }
 
-  const [rawHh = "0", rawMm = "0", rawSs = "0"] = parts;
-  return `${rawHh.padStart(2, "0")}:${rawMm.padStart(2, "0")}:${rawSs.padStart(2, "0")}`;
+  const [rawHh = '0', rawMm = '0', rawSs = '0'] = parts;
+  return `${rawHh.padStart(2, '0')}:${rawMm.padStart(2, '0')}:${rawSs.padStart(2, '0')}`;
 }
 
-export async function retryAsync<T>(
-  fn: () => Promise<T>,
-  retries = 3,
-  delayMs = 1000,
-): Promise<T> {
+export async function retryAsync<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): Promise<T> {
   for (let i = 0; i < retries; i += 1) {
     try {
       return await fn();
@@ -61,5 +57,5 @@ export async function retryAsync<T>(
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
   }
-  throw new Error("Retry failed");
+  throw new Error('Retry failed');
 }

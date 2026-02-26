@@ -1,7 +1,7 @@
-import { PartialSyncRuntimeOptions } from "@/config/syncRuntime";
+import { PartialSyncRuntimeOptions } from '@/config/syncRuntime';
 
-export type JobKind = "rss" | "excel";
-export type JobStatus = "queued" | "running" | "succeeded" | "failed";
+export type JobKind = 'rss' | 'excel';
+export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
 
 export type JobProgress = {
   percent: number;
@@ -37,7 +37,7 @@ export type JobRecord = {
 };
 
 export type JobEvent =
-  | { type: "status"; status: JobStatus; at: string }
-  | { type: "progress"; progress: JobProgress; at: string }
-  | { type: "result"; result: unknown; at: string }
-  | { type: "error"; error: string; at: string };
+  | { type: 'status'; status: JobStatus; at: string }
+  | { type: 'progress'; progress: JobProgress; at: string }
+  | { type: 'result'; result: unknown; at: string }
+  | { type: 'error'; error: string; at: string };

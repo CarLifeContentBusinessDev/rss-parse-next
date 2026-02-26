@@ -1,4 +1,4 @@
-﻿import { DEFAULT_SYNC_OPTIONS } from "@/config/syncRuntime";
+﻿import { DEFAULT_SYNC_OPTIONS } from '@/config/syncRuntime';
 
 export const SHEET_NAME = DEFAULT_SYNC_OPTIONS.sheetName;
 export const COUNTRY_CODE = DEFAULT_SYNC_OPTIONS.countryCode;
@@ -16,11 +16,9 @@ export const SYNC_CATEGORY = DEFAULT_SYNC_OPTIONS.syncCategory;
 export const GLOBAL_CATEGORY_ID = DEFAULT_SYNC_OPTIONS.globalCategoryId;
 export const SYNC_THEMES = DEFAULT_SYNC_OPTIONS.syncThemes;
 export const PROGRAMS_TABLE = DEFAULT_SYNC_OPTIONS.tables.programs;
-export const PROGRAMS_CATEGORIES_TABLE =
-  DEFAULT_SYNC_OPTIONS.tables.programsCategories;
+export const PROGRAMS_CATEGORIES_TABLE = DEFAULT_SYNC_OPTIONS.tables.programsCategories;
 export const EPISODES_TABLE = DEFAULT_SYNC_OPTIONS.tables.episodes;
 export const THEMES_PROGRAMS_TABLE = DEFAULT_SYNC_OPTIONS.tables.themesPrograms;
 export const SKIP_DUPLICATES = true;
 export const THEME_ID = DEFAULT_SYNC_OPTIONS.themeId;
-export const RSS_URL = "https://example.com/rss";
-
+export const RSS_URL = 'https://example.com/rss';

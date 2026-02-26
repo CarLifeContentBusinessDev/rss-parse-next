@@ -1,20 +1,20 @@
-﻿import fs from "node:fs";
-import path from "node:path";
-import { spawn } from "node:child_process";
-import { isR2Configured, uploadLocalFileToR2 } from "@/lib/r2";
-import { supabase } from "@/lib/supabase";
-import { SyncRuntimeOptions } from "@/config/syncRuntime";
+﻿import fs from 'node:fs';
+import path from 'node:path';
+import { spawn } from 'node:child_process';
+import { isR2Configured, uploadLocalFileToR2 } from '@/lib/r2';
+import { supabase } from '@/lib/supabase';
+import { SyncRuntimeOptions } from '@/config/syncRuntime';
 
 export function validateSyncEnv() {
-  const required = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"] as const;
+  const required = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'] as const;
   const missing = required.filter((key) => !process.env[key]);
   if (missing.length > 0) {
-    throw new Error(`Missing required env: ${missing.join(", ")}`);
+    throw new Error(`Missing required env: ${missing.join(', ')}`);
   }
 }
 
 export function sanitizeFileName(name: string) {
-  return name.replace(/[\/\\:*?"<>|]/g, "").trim();
+  return name.replace(/[\/\\:*?"<>|]/g, '').trim();
 }
 
 function cleanupLocalFileIfNeeded(filePath: string, options: SyncRuntimeOptions) {
@@ -49,17 +49,17 @@ export async function downloadAndCompressAudioFromUrlToRecommendedMp3(
 
   await new Promise<void>((resolve, reject) => {
     const ffmpeg = spawn(
-      "ffmpeg",
-      ["-y", "-i", audioUrl, "-vn", "-ac", "1", "-b:a", "64k", "-ar", "44100", outputPath],
-      { stdio: ["ignore", "ignore", "pipe"] },
+      'ffmpeg',
+      ['-y', '-i', audioUrl, '-vn', '-ac', '1', '-b:a', '64k', '-ar', '44100', outputPath],
+      { stdio: ['ignore', 'ignore', 'pipe'] },
     );
 
-    let stderr = "";
-    ffmpeg.stderr.on("data", (chunk: Buffer) => {
+    let stderr = '';
+    ffmpeg.stderr.on('data', (chunk: Buffer) => {
       stderr += chunk.toString();
     });
-    ffmpeg.on("error", (error) => reject(new Error(`Failed to start ffmpeg: ${error.message}`)));
-    ffmpeg.on("close", (code) => {
+    ffmpeg.on('error', (error) => reject(new Error(`Failed to start ffmpeg: ${error.message}`)));
+    ffmpeg.on('close', (code) => {
       if (code === 0) resolve();
       else reject(new Error(`ffmpeg audio compression failed (${code}): ${stderr}`));
     });
@@ -89,34 +89,36 @@ export async function downloadAndCompressImageFromUrlToTargetWebp(
 
       await new Promise<void>((resolve, reject) => {
         const ffmpeg = spawn(
-          "ffmpeg",
+          'ffmpeg',
           [
-            "-y",
-            "-i",
+            '-y',
+            '-i',
             imageUrl,
-            "-vf",
+            '-vf',
             `scale='min(iw,${width})':-2`,
-            "-frames:v",
-            "1",
-            "-c:v",
-            "libwebp",
-            "-q:v",
+            '-frames:v',
+            '1',
+            '-c:v',
+            'libwebp',
+            '-q:v',
             String(quality),
-            "-compression_level",
-            "6",
-            "-preset",
-            "picture",
+            '-compression_level',
+            '6',
+            '-preset',
+            'picture',
             tempPath,
           ],
-          { stdio: ["ignore", "ignore", "pipe"] },
+          { stdio: ['ignore', 'ignore', 'pipe'] },
         );
 
-        let stderr = "";
-        ffmpeg.stderr.on("data", (chunk: Buffer) => {
+        let stderr = '';
+        ffmpeg.stderr.on('data', (chunk: Buffer) => {
           stderr += chunk.toString();
         });
-        ffmpeg.on("error", (error) => reject(new Error(`Failed to start ffmpeg: ${error.message}`)));
-        ffmpeg.on("close", (code) => {
+        ffmpeg.on('error', (error) =>
+          reject(new Error(`Failed to start ffmpeg: ${error.message}`)),
+        );
+        ffmpeg.on('close', (code) => {
           if (code === 0) resolve();
           else reject(new Error(`ffmpeg image compression failed (${code}): ${stderr}`));
         });
@@ -159,10 +161,12 @@ export async function syncCategoryMapping(
     return;
   }
 
-  const { error } = await supabase.from(options.tables.programsCategories).upsert(
-    { program_id: programId, category_id: categoryId, country },
-    { onConflict: "program_id,category_id,country" },
-  );
+  const { error } = await supabase
+    .from(options.tables.programsCategories)
+    .upsert(
+      { program_id: programId, category_id: categoryId, country },
+      { onConflict: 'program_id,category_id,country' },
+    );
   if (error) throw error;
 }
 
@@ -175,7 +179,10 @@ export async function syncThemeMapping(
 
   const { error } = await supabase
     .from(options.tables.themesPrograms)
-    .upsert({ program_id: programId, theme_id: options.themeId, order: orderPopular }, { onConflict: "program_id,theme_id" });
+    .upsert(
+      { program_id: programId, theme_id: options.themeId, order: orderPopular },
+      { onConflict: 'program_id,theme_id' },
+    );
   if (error) throw error;
 }
 
@@ -207,12 +214,12 @@ export async function downloadEpisodeFiles(
   const uploadToR2 = isR2Configured();
   const countryPrefix = country.toLowerCase();
   const safeProgramTitle = sanitizeFileName(programTitle);
-  const r2Prefix = "test";
+  const r2Prefix = 'test';
   let uploadedCount = 0;
   let updatedSupabaseCount = 0;
 
   const tasks = episodes.map(async (episode) => {
-    const safeTitle = sanitizeFileName(episode.title || "untitled");
+    const safeTitle = sanitizeFileName(episode.title || 'untitled');
     const updatePayload: { audio_file?: string; img_url?: string } = {};
 
     if (episode.audio_file) {
@@ -251,10 +258,10 @@ export async function downloadEpisodeFiles(
       const query = supabase.from(options.tables.episodes).update(updatePayload);
       const scoped =
         episode.id !== undefined && episode.id !== null
-          ? query.eq("id", episode.id)
-          : query.eq("program_id", programId).eq("title", episode.title);
+          ? query.eq('id', episode.id)
+          : query.eq('program_id', programId).eq('title', episode.title);
 
-      const { data, error } = await scoped.select("id");
+      const { data, error } = await scoped.select('id');
       if (error) throw error;
       if (data && data.length > 0) updatedSupabaseCount += data.length;
     }
@@ -279,8 +286,8 @@ export async function downloadEpisodeFiles(
           const { data, error } = await supabase
             .from(options.tables.programs)
             .update({ img_url: programImageUrl })
-            .eq("id", programId)
-            .select("id");
+            .eq('id', programId)
+            .select('id');
           if (error) throw error;
           if (data && data.length > 0) updatedSupabaseCount += data.length;
         } finally {
@@ -291,7 +298,7 @@ export async function downloadEpisodeFiles(
   }
 
   const settled = await Promise.allSettled(tasks);
-  const rejected = settled.filter((item) => item.status === "rejected");
+  const rejected = settled.filter((item) => item.status === 'rejected');
   if (rejected.length > 0) {
     throw new Error(`Download/upload tasks failed: ${rejected.length}`);
   }
@@ -309,12 +316,12 @@ export async function downloadEpisodesFromDb(
   downloadLimit: number,
   options: SyncRuntimeOptions,
 ) {
-  const baseDir = path.join(process.cwd(), "downloads_compress", sanitizeFileName(programTitle));
+  const baseDir = path.join(process.cwd(), 'downloads_compress', sanitizeFileName(programTitle));
   let query = supabase
     .from(options.tables.episodes)
-    .select("id,title,audio_file,img_url,date")
-    .eq("program_id", programId)
-    .order("date", { ascending: false });
+    .select('id,title,audio_file,img_url,date')
+    .eq('program_id', programId)
+    .order('date', { ascending: false });
 
   if (downloadLimit > 0) {
     query = query.limit(downloadLimit);
@@ -323,6 +330,13 @@ export async function downloadEpisodesFromDb(
   const { data, error } = await query;
   if (error) throw error;
 
-  return downloadEpisodeFiles(baseDir, programId, country, data ?? [], programImage, programTitle, options);
+  return downloadEpisodeFiles(
+    baseDir,
+    programId,
+    country,
+    data ?? [],
+    programImage,
+    programTitle,
+    options,
+  );
 }
-

@@ -1,6 +1,6 @@
-import { EventEmitter } from "node:events";
-import { randomUUID } from "node:crypto";
-import { JobEvent, JobKind, JobPayload, JobRecord, JobStatus } from "@/jobs/types";
+import { EventEmitter } from 'node:events';
+import { randomUUID } from 'node:crypto';
+import { JobEvent, JobKind, JobPayload, JobRecord, JobStatus } from '@/jobs/types';
 
 type JobRunner = (args: {
   payload: JobPayload;
@@ -20,13 +20,13 @@ class JobManager {
       id,
       kind,
       payload,
-      status: "queued",
+      status: 'queued',
       createdAt: now,
-      progress: { percent: 0, message: "queued" },
+      progress: { percent: 0, message: 'queued' },
     };
     this.jobs.set(id, job);
     this.queue.push(id);
-    this.emit(id, { type: "status", status: "queued", at: now });
+    this.emit(id, { type: 'status', status: 'queued', at: now });
     return id;
   }
 
@@ -50,34 +50,33 @@ class JobManager {
       const job = this.jobs.get(id);
       if (!job) continue;
 
-      this.setStatus(id, "running");
+      this.setStatus(id, 'running');
       try {
         const run = worker(job.kind);
         const result = await run({
           payload: job.payload,
-          updateProgress: (percent, message) =>
-            this.setProgress(id, percent, message),
+          updateProgress: (percent, message) => this.setProgress(id, percent, message),
         });
         const now = new Date().toISOString();
         const next = this.jobs.get(id);
         if (next) {
           next.result = result;
           next.finishedAt = now;
-          next.progress = { percent: 100, message: "completed" };
-          next.status = "succeeded";
-          this.emit(id, { type: "result", result, at: now });
-          this.emit(id, { type: "status", status: "succeeded", at: now });
+          next.progress = { percent: 100, message: 'completed' };
+          next.status = 'succeeded';
+          this.emit(id, { type: 'result', result, at: now });
+          this.emit(id, { type: 'status', status: 'succeeded', at: now });
         }
       } catch (error) {
         const now = new Date().toISOString();
-        const message = error instanceof Error ? error.message : "Unknown error";
+        const message = error instanceof Error ? error.message : 'Unknown error';
         const next = this.jobs.get(id);
         if (next) {
           next.error = message;
           next.finishedAt = now;
-          next.status = "failed";
-          this.emit(id, { type: "error", error: message, at: now });
-          this.emit(id, { type: "status", status: "failed", at: now });
+          next.status = 'failed';
+          this.emit(id, { type: 'error', error: message, at: now });
+          this.emit(id, { type: 'status', status: 'failed', at: now });
         }
       }
     }
@@ -90,8 +89,8 @@ class JobManager {
     if (!job) return;
     job.status = status;
     const now = new Date().toISOString();
-    if (status === "running") job.startedAt = now;
-    this.emit(id, { type: "status", status, at: now });
+    if (status === 'running') job.startedAt = now;
+    this.emit(id, { type: 'status', status, at: now });
   }
 
   private setProgress(id: string, percent: number, message: string) {
@@ -100,7 +99,7 @@ class JobManager {
     const normalized = Math.max(0, Math.min(100, percent));
     const progress = { percent: normalized, message };
     job.progress = progress;
-    this.emit(id, { type: "progress", progress, at: new Date().toISOString() });
+    this.emit(id, { type: 'progress', progress, at: new Date().toISOString() });
   }
 
   private emit(id: string, event: JobEvent) {

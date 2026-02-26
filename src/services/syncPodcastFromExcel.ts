@@ -1,6 +1,6 @@
-﻿import path from "node:path";
-import Parser from "rss-parser";
-import { supabase } from "@/lib/supabase";
+﻿import path from 'node:path';
+import Parser from 'rss-parser';
+import { supabase } from '@/lib/supabase';
 import {
   downloadEpisodeFiles,
   downloadEpisodesFromDb,
@@ -8,13 +8,10 @@ import {
   syncCategoryMapping,
   syncThemeMapping,
   validateSyncEnv,
-} from "@/services/syncPodcastCommon";
-import { formatDateYYMMDD, formatDuration, retryAsync } from "@/utils/duration";
-import {
-  PartialSyncRuntimeOptions,
-  resolveSyncOptions,
-} from "@/config/syncRuntime";
-import * as XLSX from "xlsx";
+} from '@/services/syncPodcastCommon';
+import { formatDateYYMMDD, formatDuration, retryAsync } from '@/utils/duration';
+import { PartialSyncRuntimeOptions, resolveSyncOptions } from '@/config/syncRuntime';
+import * as XLSX from 'xlsx';
 
 type FeedItem = {
   title?: string;
@@ -63,8 +60,8 @@ const parser = new Parser();
 const SKIP_DUPLICATES = true;
 
 function toNumber(value: unknown): number | undefined {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim() !== "") {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : undefined;
   }
@@ -74,7 +71,7 @@ function toNumber(value: unknown): number | undefined {
 function getField<T>(row: Record<string, unknown>, keys: string[]): T | undefined {
   for (const key of keys) {
     const value = row[key];
-    if (value !== undefined && value !== null && value !== "") {
+    if (value !== undefined && value !== null && value !== '') {
       return value as T;
     }
   }
@@ -98,30 +95,22 @@ function isRankInRange(rank: number | undefined, minRank: number | null, maxRank
 export async function syncPodcastFromExcel(
   input: SyncPodcastFromExcelInput,
 ): Promise<{ processedItems: number; uploadedCount: number; updatedSupabaseCount: number }> {
-  const {
-    rssUrl,
-    programTitle,
-    subtitle,
-    country,
-    categoryId,
-    orderPopular,
-    options,
-  } = input;
+  const { rssUrl, programTitle, subtitle, country, categoryId, orderPopular, options } = input;
 
   const config = resolveSyncOptions(options);
   const language = input.language ?? config.languageList;
 
   const { data: existingProgram } = await supabase
     .from(config.tables.programs)
-    .select("id,img_url")
-    .eq("title", programTitle)
+    .select('id,img_url')
+    .eq('title', programTitle)
     .maybeSingle();
 
   if (existingProgram) {
     const { count } = await supabase
       .from(config.tables.episodes)
-      .select("*", { count: "exact", head: true })
-      .eq("program_id", existingProgram.id);
+      .select('*', { count: 'exact', head: true })
+      .eq('program_id', existingProgram.id);
 
     if ((count ?? 0) >= config.episodeLimit) {
       await syncCategoryMapping(existingProgram.id, categoryId, country, config);
@@ -147,11 +136,7 @@ export async function syncPodcastFromExcel(
     }
   }
 
-  const feed = (await retryAsync(
-    () => parser.parseURL(rssUrl),
-    2,
-    1500,
-  )) as unknown as ParsedFeed;
+  const feed = (await retryAsync(() => parser.parseURL(rssUrl), 2, 1500)) as unknown as ParsedFeed;
 
   const programImage = feed.itunes?.image ?? feed.image?.url ?? null;
   const { data: program, error: programError } = await supabase
@@ -164,7 +149,7 @@ export async function syncPodcastFromExcel(
         type: config.programType,
         language,
       },
-      { onConflict: "title", ignoreDuplicates: SKIP_DUPLICATES },
+      { onConflict: 'title', ignoreDuplicates: SKIP_DUPLICATES },
     )
     .select()
     .maybeSingle();
@@ -176,7 +161,7 @@ export async function syncPodcastFromExcel(
     const { data, error } = await supabase
       .from(config.tables.programs)
       .select()
-      .eq("title", programTitle)
+      .eq('title', programTitle)
       .single();
     if (error) throw error;
     finalProgram = data;
@@ -187,14 +172,14 @@ export async function syncPodcastFromExcel(
 
   const { count } = await supabase
     .from(config.tables.episodes)
-    .select("*", { count: "exact", head: true })
-    .eq("program_id", finalProgram.id);
+    .select('*', { count: 'exact', head: true })
+    .eq('program_id', finalProgram.id);
 
   const needCount = config.episodeLimit - (count ?? 0);
   const { data: existingEpisodes } = await supabase
     .from(config.tables.episodes)
-    .select("title")
-    .eq("program_id", finalProgram.id);
+    .select('title')
+    .eq('program_id', finalProgram.id);
 
   const existingTitles = new Set((existingEpisodes ?? []).map((item) => item.title));
   const newItems = feed.items.filter((item) => item.title && !existingTitles.has(item.title));
@@ -208,7 +193,7 @@ export async function syncPodcastFromExcel(
   }> = [];
 
   for (const item of recentItems) {
-    const title = item.title ?? "untitled";
+    const title = item.title ?? 'untitled';
     const image = item.itunes?.image ?? programImage ?? null;
     const { data: upsertedEpisode, error } = await supabase
       .from(config.tables.episodes)
@@ -223,13 +208,13 @@ export async function syncPodcastFromExcel(
           type: config.programType,
           language,
         },
-        { onConflict: "program_id,title", ignoreDuplicates: SKIP_DUPLICATES },
+        { onConflict: 'program_id,title', ignoreDuplicates: SKIP_DUPLICATES },
       )
-      .select("id")
+      .select('id')
       .maybeSingle();
 
     if (error) {
-      console.error("[syncPodcastFromExcel] episode upsert failed", { title, error });
+      console.error('[syncPodcastFromExcel] episode upsert failed', { title, error });
       continue;
     }
 
@@ -237,9 +222,9 @@ export async function syncPodcastFromExcel(
     if (episodeId === null) {
       const { data } = await supabase
         .from(config.tables.episodes)
-        .select("id")
-        .eq("program_id", finalProgram.id)
-        .eq("title", title)
+        .select('id')
+        .eq('program_id', finalProgram.id)
+        .eq('title', title)
         .maybeSingle();
       episodeId = data?.id ?? null;
     }
@@ -255,7 +240,7 @@ export async function syncPodcastFromExcel(
   let uploadedCount = 0;
   let updatedSupabaseCount = 0;
   if (config.downloadFiles) {
-    const baseDir = path.join(process.cwd(), "downloads_compress", sanitizeFileName(programTitle));
+    const baseDir = path.join(process.cwd(), 'downloads_compress', sanitizeFileName(programTitle));
     const downloadItems =
       config.downloadLimit > 0 ? savedEpisodes.slice(0, config.downloadLimit) : savedEpisodes;
     const summary = await downloadEpisodeFiles(
@@ -279,12 +264,12 @@ export async function syncPodcastFromExcelBuffer(
 ): Promise<ExcelSyncRunResult> {
   validateSyncEnv();
   const config = resolveSyncOptions(runOptions.options);
-  runOptions.onProgress?.(10, "excel loaded");
+  runOptions.onProgress?.(10, 'excel loaded');
 
-  const workbook = XLSX.read(runOptions.buffer, { type: "buffer" });
+  const workbook = XLSX.read(runOptions.buffer, { type: 'buffer' });
   const sheetName = runOptions.sheetName ?? config.sheetName;
   if (!sheetName) {
-    throw new Error("No sheet found in excel file");
+    throw new Error('No sheet found in excel file');
   }
 
   const sheet = workbook.Sheets[sheetName];
@@ -296,7 +281,7 @@ export async function syncPodcastFromExcelBuffer(
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
     range: headerSkip,
   });
-  runOptions.onProgress?.(15, "rows parsed");
+  runOptions.onProgress?.(15, 'rows parsed');
 
   let succeededRows = 0;
   let failedRows = 0;
@@ -306,7 +291,7 @@ export async function syncPodcastFromExcelBuffer(
 
   for (let index = 0; index < rows.length; index += 1) {
     const row = rows[index] ?? {};
-    const rank = toNumber(getField<number | string>(row, ["rank", "Rank", "전체 순위", "순위"]));
+    const rank = toNumber(getField<number | string>(row, ['rank', 'Rank', '전체 순위', '순위']));
 
     if (!isRankInRange(rank, config.minRank, config.maxRank)) {
       const percent = 15 + Math.round(((index + 1) / Math.max(rows.length, 1)) * 75);
@@ -314,28 +299,32 @@ export async function syncPodcastFromExcelBuffer(
       continue;
     }
 
-    const rssUrl = getField<string>(row, ["RSS", "rss", "rssUrl", "RSS URL"]);
-    const programTitle = getField<string>(row, ["채널명", "programTitle", "title", "Program Title"]);
+    const rssUrl = getField<string>(row, ['RSS', 'rss', 'rssUrl', 'RSS URL']);
+    const programTitle = getField<string>(row, [
+      '채널명',
+      'programTitle',
+      'title',
+      'Program Title',
+    ]);
 
     if (!rssUrl || !programTitle) {
       failedRows += 1;
       failures.push({
         row: index + headerSkip + 1,
         rssUrl: rssUrl ?? null,
-        message: "Missing required fields: RSS/programTitle",
+        message: 'Missing required fields: RSS/programTitle',
       });
       continue;
     }
 
-    const subtitle =
-      getField<string>(row, ["제작사", "소제목", "subtitle", "Subtitle"]) ?? null;
+    const subtitle = getField<string>(row, ['제작사', '소제목', 'subtitle', 'Subtitle']) ?? null;
     const categoryId = getField<string | number>(row, [
-      "로컬 카테고리 ID",
-      "categoryId",
-      "Category ID",
+      '로컬 카테고리 ID',
+      'categoryId',
+      'Category ID',
     ]);
     const orderPopular = toNumber(
-      getField<number | string>(row, ["테마 순위", "orderPopular", "부모 순위", "Popular Order"]),
+      getField<number | string>(row, ['테마 순위', 'orderPopular', '부모 순위', 'Popular Order']),
     );
 
     try {
@@ -356,24 +345,20 @@ export async function syncPodcastFromExcelBuffer(
       failures.push({
         row: index + headerSkip + 1,
         rssUrl: String(rssUrl),
-        message: error instanceof Error ? error.message : "Unknown error",
+        message: error instanceof Error ? error.message : 'Unknown error',
       });
     }
     const percent = 15 + Math.round(((index + 1) / Math.max(rows.length, 1)) * 75);
     runOptions.onProgress?.(percent, `row ${index + 1}/${rows.length} processed`);
   }
-  runOptions.onProgress?.(95, "building result");
+  runOptions.onProgress?.(95, 'building result');
 
   const failureReportCsv = [
-    "row,rssUrl,message",
+    'row,rssUrl,message',
     ...failures.map((failure) =>
-      [
-        String(failure.row),
-        escapeCsv(failure.rssUrl ?? ""),
-        escapeCsv(failure.message),
-      ].join(","),
+      [String(failure.row), escapeCsv(failure.rssUrl ?? ''), escapeCsv(failure.message)].join(','),
     ),
-  ].join("\n");
+  ].join('\n');
 
   return {
     totalRows: rows.length,
@@ -385,4 +370,3 @@ export async function syncPodcastFromExcelBuffer(
     failureReportCsv,
   };
 }
-

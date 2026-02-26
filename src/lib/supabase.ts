@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from '@supabase/supabase-js';
 
 function getRequiredEnv(name: string) {
   const value = process.env[name];
@@ -9,6 +9,6 @@ function getRequiredEnv(name: string) {
 }
 
 export const supabase = createClient(
-  getRequiredEnv("SUPABASE_URL"),
-  getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY"),
+  getRequiredEnv('SUPABASE_URL'),
+  getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY'),
 );

@@ -1,12 +1,12 @@
-import fs from "node:fs/promises";
-import { syncPodcastFromRss } from "@/services/syncPodcastFromRss";
-import { syncPodcastFromExcelBuffer } from "@/services/syncPodcastFromExcel";
-import { jobManager } from "@/jobs/jobManager";
-import { ExcelJobPayload, JobKind, RssJobPayload } from "@/jobs/types";
+import fs from 'node:fs/promises';
+import { syncPodcastFromRss } from '@/services/syncPodcastFromRss';
+import { syncPodcastFromExcelBuffer } from '@/services/syncPodcastFromExcel';
+import { jobManager } from '@/jobs/jobManager';
+import { ExcelJobPayload, JobKind, RssJobPayload } from '@/jobs/types';
 
 export function ensureWorkerStarted() {
   void jobManager.start((kind) => {
-    if (kind === "rss") {
+    if (kind === 'rss') {
       return async ({ payload, updateProgress }) =>
         runRssJob({ payload: payload as RssJobPayload, updateProgress });
     }
@@ -22,7 +22,7 @@ async function runRssJob({
   payload: RssJobPayload;
   updateProgress: (percent: number, message: string) => void;
 }) {
-  updateProgress(5, "rss fetch started");
+  updateProgress(5, 'rss fetch started');
   return syncPodcastFromRss({
     rssUrl: payload.rssUrl,
     options: payload.options,
@@ -37,7 +37,7 @@ async function runExcelJob({
   payload: ExcelJobPayload;
   updateProgress: (percent: number, message: string) => void;
 }) {
-  updateProgress(5, "excel parse started");
+  updateProgress(5, 'excel parse started');
   try {
     const buffer = await fs.readFile(payload.filePath);
     return await syncPodcastFromExcelBuffer({

@@ -1,4 +1,4 @@
-﻿@import "tailwindcss";
+﻿@import 'tailwindcss';
 
 :root {
   --background: #f3f8f8;
@@ -8,8 +8,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Segoe UI", "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", system-ui, sans-serif;
-  --font-mono: "Cascadia Mono", "Consolas", "JetBrains Mono", ui-monospace, monospace;
+  --font-sans:
+    'Segoe UI', 'Pretendard', 'Noto Sans KR', 'Apple SD Gothic Neo', system-ui, sans-serif;
+  --font-mono: 'Cascadia Mono', 'Consolas', 'JetBrains Mono', ui-monospace, monospace;
 }
 
 body {
@@ -19,5 +20,6 @@ body {
     radial-gradient(900px 500px at 110% 0%, rgba(34, 211, 238, 0.16), transparent 65%),
     linear-gradient(180deg, #f8fbfb 0%, #f3f8f8 55%, #eef5f5 100%);
   color: var(--foreground);
-  font-family: "Segoe UI", "Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", system-ui, sans-serif;
+  font-family:
+    'Segoe UI', 'Pretendard', 'Noto Sans KR', 'Apple SD Gothic Neo', system-ui, sans-serif;
 }

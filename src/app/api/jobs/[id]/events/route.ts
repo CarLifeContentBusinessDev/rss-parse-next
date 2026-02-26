@@ -1,25 +1,22 @@
-import { jobManager } from "@/jobs/jobManager";
+import { jobManager } from '@/jobs/jobManager';
 
-export const runtime = "nodejs";
+export const runtime = 'nodejs';
 
 function formatEvent(data: unknown) {
   return `data: ${JSON.stringify(data)}\n\n`;
 }
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const job = jobManager.getJob(id);
 
   if (!job) {
-    return new Response(formatEvent({ type: "error", error: "job not found" }), {
+    return new Response(formatEvent({ type: 'error', error: 'job not found' }), {
       status: 404,
       headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
       },
     });
   }
@@ -54,20 +51,23 @@ export async function GET(
         }
       };
 
-      safeEnqueue(formatEvent({ type: "snapshot", job }));
+      safeEnqueue(formatEvent({ type: 'snapshot', job }));
 
       const unsubscribe = jobManager.subscribe(id, (event) => {
         safeEnqueue(formatEvent(event));
-        if (event.type === "status" && (event.status === "succeeded" || event.status === "failed")) {
+        if (
+          event.type === 'status' &&
+          (event.status === 'succeeded' || event.status === 'failed')
+        ) {
           setTimeout(close, 100);
         }
       });
 
       heartbeat = setInterval(() => {
-        safeEnqueue(": ping\n\n");
+        safeEnqueue(': ping\n\n');
       }, 15000);
 
-      if (job.status === "succeeded" || job.status === "failed") {
+      if (job.status === 'succeeded' || job.status === 'failed') {
         setTimeout(close, 100);
       }
     },
@@ -78,9 +78,9 @@ export async function GET(
 
   return new Response(stream, {
     headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      Connection: 'keep-alive',
     },
   });
 }

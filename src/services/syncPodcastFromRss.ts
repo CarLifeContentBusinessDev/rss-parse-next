@@ -1,17 +1,14 @@
-﻿import Parser from "rss-parser";
-import path from "node:path";
-import { supabase } from "@/lib/supabase";
-import { formatDateYYMMDD, formatDuration, retryAsync } from "@/utils/duration";
+﻿import Parser from 'rss-parser';
+import path from 'node:path';
+import { supabase } from '@/lib/supabase';
+import { formatDateYYMMDD, formatDuration, retryAsync } from '@/utils/duration';
 import {
   downloadEpisodeFiles,
   downloadEpisodesFromDb,
   sanitizeFileName,
   validateSyncEnv,
-} from "@/services/syncPodcastCommon";
-import {
-  PartialSyncRuntimeOptions,
-  resolveSyncOptions,
-} from "@/config/syncRuntime";
+} from '@/services/syncPodcastCommon';
+import { PartialSyncRuntimeOptions, resolveSyncOptions } from '@/config/syncRuntime';
 
 type FeedItem = {
   title?: string;
@@ -53,33 +50,29 @@ export async function syncPodcastFromRss({
 }: SyncPodcastFromRssInput): Promise<SyncPodcastFromRssResult> {
   validateSyncEnv();
   const config = resolveSyncOptions(options);
-  onProgress?.(10, "parsing rss feed");
+  onProgress?.(10, 'parsing rss feed');
 
-  const feed = (await retryAsync(
-    () => parser.parseURL(rssUrl),
-    2,
-    1500,
-  )) as unknown as ParsedFeed;
+  const feed = (await retryAsync(() => parser.parseURL(rssUrl), 2, 1500)) as unknown as ParsedFeed;
 
-  const programTitle = feed.title ?? "";
+  const programTitle = feed.title ?? '';
   const programImage = feed.itunes?.image ?? feed.image?.url ?? null;
 
   const { data: existingProgram } = await supabase
     .from(config.tables.programs)
-    .select("id,img_url")
-    .eq("title", programTitle)
+    .select('id,img_url')
+    .eq('title', programTitle)
     .maybeSingle();
 
   if (existingProgram) {
     const { count } = await supabase
       .from(config.tables.episodes)
-      .select("*", { count: "exact", head: true })
-      .eq("program_id", existingProgram.id);
+      .select('*', { count: 'exact', head: true })
+      .eq('program_id', existingProgram.id);
 
     if ((count ?? 0) >= config.episodeLimit) {
-      onProgress?.(35, "existing episodes already sufficient");
+      onProgress?.(35, 'existing episodes already sufficient');
       if (config.downloadFiles) {
-        onProgress?.(70, "downloading existing episode files");
+        onProgress?.(70, 'downloading existing episode files');
         const summary = await downloadEpisodesFromDb(
           existingProgram.id,
           config.countryCode,
@@ -121,7 +114,7 @@ export async function syncPodcastFromRss({
         language: config.languageList,
       },
       {
-        onConflict: "title",
+        onConflict: 'title',
         ignoreDuplicates: SKIP_DUPLICATES,
       },
     )
@@ -129,14 +122,14 @@ export async function syncPodcastFromRss({
     .maybeSingle();
 
   if (programError) throw programError;
-  onProgress?.(40, "program upserted");
+  onProgress?.(40, 'program upserted');
 
   let finalProgram = program;
   if (!finalProgram) {
     const { data, error } = await supabase
       .from(config.tables.programs)
       .select()
-      .eq("title", programTitle)
+      .eq('title', programTitle)
       .single();
     if (error) throw error;
     finalProgram = data;
@@ -144,19 +137,19 @@ export async function syncPodcastFromRss({
 
   const { count } = await supabase
     .from(config.tables.episodes)
-    .select("*", { count: "exact", head: true })
-    .eq("program_id", finalProgram.id);
+    .select('*', { count: 'exact', head: true })
+    .eq('program_id', finalProgram.id);
 
   const needCount = config.episodeLimit - (count ?? 0);
   const { data: existingEpisodes } = await supabase
     .from(config.tables.episodes)
-    .select("title")
-    .eq("program_id", finalProgram.id);
+    .select('title')
+    .eq('program_id', finalProgram.id);
 
   const existingTitles = new Set((existingEpisodes ?? []).map((item) => item.title));
   const newItems = feed.items.filter((item) => item.title && !existingTitles.has(item.title));
   const recentItems = newItems.slice(0, Math.max(needCount, 0));
-  onProgress?.(50, "syncing episodes");
+  onProgress?.(50, 'syncing episodes');
 
   const savedEpisodes: Array<{
     id?: number | null;
@@ -167,7 +160,7 @@ export async function syncPodcastFromRss({
 
   for (let index = 0; index < recentItems.length; index += 1) {
     const item = recentItems[index];
-    const title = item.title ?? "untitled";
+    const title = item.title ?? 'untitled';
     const image = item.itunes?.image ?? programImage ?? null;
 
     const { data: upsertedEpisode, error } = await supabase
@@ -183,13 +176,13 @@ export async function syncPodcastFromRss({
           type: config.programType,
           language: config.languageList,
         },
-        { onConflict: "program_id,title", ignoreDuplicates: SKIP_DUPLICATES },
+        { onConflict: 'program_id,title', ignoreDuplicates: SKIP_DUPLICATES },
       )
-      .select("id")
+      .select('id')
       .maybeSingle();
 
     if (error) {
-      console.error("[syncPodcastFromRss] episode upsert failed", { title, error });
+      console.error('[syncPodcastFromRss] episode upsert failed', { title, error });
       continue;
     }
 
@@ -197,9 +190,9 @@ export async function syncPodcastFromRss({
     if (episodeId === null) {
       const { data } = await supabase
         .from(config.tables.episodes)
-        .select("id")
-        .eq("program_id", finalProgram.id)
-        .eq("title", title)
+        .select('id')
+        .eq('program_id', finalProgram.id)
+        .eq('title', title)
         .maybeSingle();
       episodeId = data?.id ?? null;
     }
@@ -217,8 +210,8 @@ export async function syncPodcastFromRss({
   let uploadedCount = 0;
   let updatedSupabaseCount = 0;
   if (config.downloadFiles) {
-    onProgress?.(85, "downloading/compressing files");
-    const baseDir = path.join(process.cwd(), "downloads_compress", sanitizeFileName(programTitle));
+    onProgress?.(85, 'downloading/compressing files');
+    const baseDir = path.join(process.cwd(), 'downloads_compress', sanitizeFileName(programTitle));
     const downloadItems =
       config.downloadLimit > 0 ? savedEpisodes.slice(0, config.downloadLimit) : savedEpisodes;
     const summary = await downloadEpisodeFiles(
@@ -244,4 +237,3 @@ export async function syncPodcastFromRss({
     updatedSupabaseCount,
   };
 }
-

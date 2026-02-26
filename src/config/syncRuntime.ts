@@ -3,7 +3,7 @@ export type SyncRuntimeOptions = {
   countryCode: string;
   languageList: string[];
   programType: string | null;
-  mode: "excel" | "rss";
+  mode: 'excel' | 'rss';
   episodeLimit: number;
   downloadFiles: boolean;
   downloadLimit: number;
@@ -25,11 +25,11 @@ export type SyncRuntimeOptions = {
 };
 
 export const DEFAULT_SYNC_OPTIONS: SyncRuntimeOptions = {
-  sheetName: "IT_이탈리아",
-  countryCode: "IT",
-  languageList: ["it"],
-  programType: "podcast",
-  mode: "excel",
+  sheetName: 'IT_이탈리아',
+  countryCode: 'IT',
+  languageList: ['it'],
+  programType: 'podcast',
+  mode: 'excel',
   episodeLimit: 4,
   downloadFiles: true,
   downloadLimit: 10,
@@ -43,17 +43,17 @@ export const DEFAULT_SYNC_OPTIONS: SyncRuntimeOptions = {
   syncThemes: true,
   themeId: 16,
   tables: {
-    programs: "programs_test",
-    programsCategories: "programs_categories_test",
-    episodes: "episodes_test",
-    themesPrograms: "themes_programs_test",
+    programs: 'programs_test',
+    programsCategories: 'programs_categories_test',
+    episodes: 'episodes_test',
+    themesPrograms: 'themes_programs_test',
   },
 };
 
 export type PartialSyncRuntimeOptions = Partial<
-  Omit<SyncRuntimeOptions, "tables" | "languageList">
+  Omit<SyncRuntimeOptions, 'tables' | 'languageList'>
 > & {
-  tables?: Partial<SyncRuntimeOptions["tables"]>;
+  tables?: Partial<SyncRuntimeOptions['tables']>;
   languageList?: string[] | string;
 };
 
@@ -61,14 +61,12 @@ function normalizeLanguageList(value: string[] | string | undefined) {
   if (!value) return DEFAULT_SYNC_OPTIONS.languageList;
   if (Array.isArray(value)) return value.filter(Boolean);
   return value
-    .split(",")
+    .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
 }
 
-export function resolveSyncOptions(
-  overrides?: PartialSyncRuntimeOptions,
-): SyncRuntimeOptions {
+export function resolveSyncOptions(overrides?: PartialSyncRuntimeOptions): SyncRuntimeOptions {
   return {
     ...DEFAULT_SYNC_OPTIONS,
     ...overrides,
