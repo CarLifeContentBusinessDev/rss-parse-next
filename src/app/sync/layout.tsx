@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 
+import { LogoutButton } from '../_components/auth/logout-button';
 import { GlobalAudioBar } from '../_components/global-audio-bar';
 import { UploadModeNav } from '../_components/upload-mode-nav';
 
@@ -13,6 +14,9 @@ export default function SyncLayout({ children }: Readonly<{ children: ReactNode 
         <p className='relative mt-2 text-sm text-zinc-600'>
           Run RSS sync and Excel batch sync in separate upload workflows.
         </p>
+        <div className='relative mt-4'>
+          <LogoutButton />
+        </div>
       </section>
 
       <section className='grid grid-cols-1 gap-6 xl:grid-cols-[260px_minmax(0,1fr)]'>
