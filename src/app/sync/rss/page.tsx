@@ -1,4 +1,4 @@
-import { RSSSyncPageClient } from '../../_components/pages/rss-sync-page-client';
+import { RSSSyncPageClient } from './_components/rss-sync-page-client';
 
 export default function RSSSyncPage() {
   return <RSSSyncPageClient />;
