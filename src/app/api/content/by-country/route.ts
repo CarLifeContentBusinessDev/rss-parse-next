@@ -84,7 +84,7 @@ export async function GET(request: Request) {
 
     const tables = preset === 'main' ? MAIN_TABLES : TEST_TABLES;
 
-    let countQuery = supabase
+    const countQuery = supabase
       .from(tables.programs)
       .select('id', { count: 'exact', head: true })
       .contains('language', [country]);
@@ -151,13 +151,6 @@ export async function GET(request: Request) {
       : { data: [], error: null };
     if (themeRowsError) throw themeRowsError;
 
-    const { data: episodeRows, error: episodeRowsError } = await supabase
-      .from(tables.episodes)
-      .select('program_id,duration,date')
-      .in('program_id', programIds)
-      .order('date', { ascending: false });
-    if (episodeRowsError) throw episodeRowsError;
-
     const orderByProgram = new Map<string, number>();
     for (const row of themeRows ?? []) {
       const parsedOrder = toNullableNumber(row.order);
@@ -167,20 +160,11 @@ export async function GET(request: Request) {
       }
     }
 
-    const latestDurationByProgram = new Map<string, string | null>();
-    for (const row of episodeRows ?? []) {
-      const parsedProgramId = toProgramIdKey(row.program_id);
-      if (parsedProgramId !== null && !latestDurationByProgram.has(parsedProgramId)) {
-        latestDurationByProgram.set(parsedProgramId, row.duration ?? null);
-      }
-    }
-
     const items = programs.map((program) => {
       const key = toProgramIdKey(program.id) ?? '';
       return {
         ...program,
         popularOrder: orderByProgram.get(key) ?? null,
-        latestDuration: latestDurationByProgram.get(key) ?? null,
       };
     });
 
