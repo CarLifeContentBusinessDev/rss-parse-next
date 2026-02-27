@@ -23,6 +23,7 @@ export function ProgramDetailPageClient() {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [processingEpisodeId, setProcessingEpisodeId] = useState<number | null>(null);
   const [savingEpisodeId, setSavingEpisodeId] = useState<number | null>(null);
+  const [deletingEpisodeId, setDeletingEpisodeId] = useState<number | null>(null);
   const [program, setProgram] = useState<ProgramDetail | null>(null);
   const [episodes, setEpisodes] = useState<EpisodeItem[]>([]);
   const { state: audioState, controls } = useGlobalAudio({
@@ -152,6 +153,41 @@ export function ProgramDetailPageClient() {
     }
   };
 
+  const onDeleteEpisode = async (episodeId: number) => {
+    setDeletingEpisodeId(episodeId);
+    setActionMessage(null);
+
+    try {
+      const response = await fetch(`/api/content/episode/${episodeId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tablePreset,
+        }),
+      });
+
+      const json = (await response.json()) as {
+        ok: boolean;
+        error?: { message: string };
+      };
+
+      if (!json.ok) {
+        setActionMessage(json.error?.message ?? 'Episode delete failed');
+        return;
+      }
+
+      setActionMessage('Episode deleted');
+      await fetchDetail();
+    } catch (deleteError) {
+      const message = deleteError instanceof Error ? deleteError.message : 'Network error';
+      setActionMessage(message);
+    } finally {
+      setDeletingEpisodeId(null);
+    }
+  };
+
   const backHref = `/sync/contents?country=${encodeURIComponent(country)}&tablePreset=${encodeURIComponent(
     tablePreset,
   )}`;
@@ -187,8 +223,10 @@ export function ProgramDetailPageClient() {
           controls={controls}
           processingEpisodeId={processingEpisodeId}
           savingEpisodeId={savingEpisodeId}
+          deletingEpisodeId={deletingEpisodeId}
           onReprocessEpisode={onReprocessEpisode}
           onSaveEpisode={onSaveEpisode}
+          onDeleteEpisode={onDeleteEpisode}
         />
       </SectionCard>
     </div>
