@@ -41,7 +41,7 @@ type QueryResult = {
 
 type RankFilter = 'all' | 'ranked' | 'unranked';
 type SortKey = 'rankAsc' | 'rankDesc' | 'titleAsc' | 'titleDesc' | 'idDesc';
-const countryOptions = ['KO', 'EN', 'DE', 'JP'] as const;
+const countryOptions = ['KO', 'EN', 'DE', 'JP', 'IT', 'ES', 'UK'] as const;
 type CountryOption = (typeof countryOptions)[number];
 
 export function CountryContentsPageClient() {
