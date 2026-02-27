@@ -19,8 +19,10 @@ type EpisodeListProps = {
   controls: AudioControls;
   processingEpisodeId: number | null;
   savingEpisodeId: number | null;
+  deletingEpisodeId: number | null;
   onReprocessEpisode: (episodeId: number) => Promise<void>;
   onSaveEpisode: (episodeId: number, patch: EpisodePatch) => Promise<void>;
+  onDeleteEpisode: (episodeId: number) => Promise<void>;
 };
 
 export function EpisodeList({
@@ -30,8 +32,10 @@ export function EpisodeList({
   controls,
   processingEpisodeId,
   savingEpisodeId,
+  deletingEpisodeId,
   onReprocessEpisode,
   onSaveEpisode,
+  onDeleteEpisode,
 }: EpisodeListProps) {
   const [editingEpisodeId, setEditingEpisodeId] = useState<number | null>(null);
   const [draft, setDraft] = useState<EpisodePatch>({
@@ -120,6 +124,17 @@ export function EpisodeList({
                         className='cursor-pointer rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm font-semibold text-zinc-700 hover:bg-zinc-50'
                       >
                         Edit
+                      </button>
+                      <button
+                        type='button'
+                        onClick={() => {
+                          if (!window.confirm(`Delete episode ${episode.id}?`)) return;
+                          void onDeleteEpisode(episode.id);
+                        }}
+                        disabled={deletingEpisodeId === episode.id}
+                        className='cursor-pointer rounded-lg border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm font-semibold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60'
+                      >
+                        {deletingEpisodeId === episode.id ? 'Deleting...' : 'Delete'}
                       </button>
                     </>
                   );
