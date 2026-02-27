@@ -1,6 +1,8 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 import { SectionCard } from '../section-card';
 import { inputClass } from '../runtime-options';
@@ -40,6 +42,8 @@ type QueryResult = {
 
 type RankFilter = 'all' | 'ranked' | 'unranked';
 type SortKey = 'rankAsc' | 'rankDesc' | 'titleAsc' | 'titleDesc' | 'idDesc' | 'durationDesc';
+const countryOptions = ['KO', 'EN', 'DE', 'JP'] as const;
+type CountryOption = (typeof countryOptions)[number];
 
 function durationToSeconds(input: string | null) {
   if (!input) return -1;
@@ -52,8 +56,15 @@ function durationToSeconds(input: string | null) {
 }
 
 export function CountryContentsPageClient() {
-  const [country, setCountry] = useState('KO');
-  const [tablePreset, setTablePreset] = useState<TablePreset>('main');
+  const searchParams = useSearchParams();
+  const rawInitialCountry = (searchParams.get('country') ?? 'KO').toUpperCase();
+  const initialCountry: CountryOption = countryOptions.includes(rawInitialCountry as CountryOption)
+    ? (rawInitialCountry as CountryOption)
+    : 'KO';
+  const initialTablePreset = searchParams.get('tablePreset') === 'test' ? 'test' : 'main';
+
+  const [country, setCountry] = useState(initialCountry);
+  const [tablePreset, setTablePreset] = useState<TablePreset>(initialTablePreset);
   const [limit] = useState(24);
   const [currentCursor, setCurrentCursor] = useState<string | null>(null);
   const [cursorStack, setCursorStack] = useState<Array<string | null>>([]);
@@ -119,7 +130,7 @@ export function CountryContentsPageClient() {
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const normalized = country.trim().toUpperCase();
+    const normalized = country;
     setCountry(normalized);
     setCurrentCursor(null);
     setCursorStack([]);
@@ -195,13 +206,17 @@ export function CountryContentsPageClient() {
         <form onSubmit={onSubmit} className='grid grid-cols-1 gap-3 sm:grid-cols-[180px_200px_auto] sm:items-end'>
           <div>
             <label className='block text-sm font-medium text-zinc-700'>Country</label>
-            <input
+            <select
               value={country}
-              maxLength={8}
-              onChange={(event) => setCountry(event.target.value.toUpperCase())}
-              placeholder='IT'
+              onChange={(event) => setCountry(event.target.value as CountryOption)}
               className={inputClass}
-            />
+            >
+              {countryOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -314,9 +329,12 @@ export function CountryContentsPageClient() {
         ) : (
           <div className='grid grid-cols-1 gap-3'>
             {visibleItems.map((item) => (
-              <article
+              <Link
                 key={item.id}
-                className='grid grid-cols-[72px_minmax(0,1fr)] gap-3 rounded-xl border border-zinc-200 bg-white p-3'
+                href={`/sync/contents/${item.id}?country=${encodeURIComponent(
+                  country,
+                )}&tablePreset=${encodeURIComponent(tablePreset)}`}
+                className='grid grid-cols-[72px_minmax(0,1fr)] gap-3 rounded-xl border border-zinc-200 bg-white p-3 transition hover:border-teal-300 hover:bg-teal-50/40'
               >
                 <div className='h-[72px] w-[72px] overflow-hidden rounded-lg bg-zinc-100'>
                   {item.img_url ? (
@@ -350,7 +368,7 @@ export function CountryContentsPageClient() {
                     ) : null}
                   </div>
                 </div>
-              </article>
+              </Link>
             ))}
           </div>
         )}
