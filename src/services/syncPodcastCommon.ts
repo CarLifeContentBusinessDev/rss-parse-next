@@ -40,7 +40,7 @@ function cleanupDirIfEmpty(dirPath: string, options: SyncRuntimeOptions) {
   }
 }
 
-export async function downloadAndCompressAudioFromUrlToRecommendedMp3(
+export async function downloadAndCompressAudioFromUrlToRecommendedM4a(
   audioUrl: string,
   outputPath: string,
 ) {
@@ -50,7 +50,23 @@ export async function downloadAndCompressAudioFromUrlToRecommendedMp3(
   await new Promise<void>((resolve, reject) => {
     const ffmpeg = spawn(
       'ffmpeg',
-      ['-y', '-i', audioUrl, '-vn', '-ac', '1', '-b:a', '64k', '-ar', '44100', outputPath],
+      [
+        '-y',
+        '-i',
+        audioUrl,
+        '-vn',
+        '-ac',
+        '1',
+        '-c:a',
+        'aac',
+        '-b:a',
+        '64k',
+        '-ar',
+        '44100',
+        '-movflags',
+        '+faststart',
+        outputPath,
+      ],
       { stdio: ['ignore', 'ignore', 'pipe'] },
     );
 
@@ -223,16 +239,16 @@ export async function downloadEpisodeFiles(
     const updatePayload: { audio_file?: string; img_url?: string } = {};
 
     if (episode.audio_file) {
-      const mp3Path = path.join(baseDir, `${safeTitle}.mp3`);
+      const m4aPath = path.join(baseDir, `${safeTitle}.m4a`);
       try {
-        await downloadAndCompressAudioFromUrlToRecommendedMp3(episode.audio_file, mp3Path);
+        await downloadAndCompressAudioFromUrlToRecommendedM4a(episode.audio_file, m4aPath);
         if (uploadToR2) {
-          const audioKey = `${r2Prefix}/${countryPrefix}-episodes-audio/program/${safeProgramTitle}/${safeTitle}.mp3`;
-          updatePayload.audio_file = await uploadLocalFileToR2(mp3Path, audioKey);
+          const audioKey = `${r2Prefix}/${countryPrefix}-episodes-audio/program/${safeProgramTitle}/${safeTitle}.m4a`;
+          updatePayload.audio_file = await uploadLocalFileToR2(m4aPath, audioKey);
           uploadedCount += 1;
         }
       } finally {
-        cleanupLocalFileIfNeeded(mp3Path, options);
+        cleanupLocalFileIfNeeded(m4aPath, options);
       }
     }
 
