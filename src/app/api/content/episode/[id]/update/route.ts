@@ -12,6 +12,8 @@ const COUNTRY_ALIAS_TO_CANONICAL: Record<string, string> = {
   kr: 'ko',
   ko: 'ko',
   us: 'en',
+  uk: 'uk',
+  gb: 'uk',
   en: 'en',
   de: 'de',
   ja: 'jp',
