@@ -38,6 +38,7 @@ function ensureR2Client() {
 function detectContentType(filePath: string) {
   const ext = path.extname(filePath).toLowerCase();
   if (ext === '.mp3') return 'audio/mpeg';
+  if (ext === '.m4a') return 'audio/mp4';
   if (ext === '.webp') return 'image/webp';
   if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg';
   if (ext === '.png') return 'image/png';
