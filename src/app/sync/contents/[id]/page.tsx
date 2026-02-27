@@ -1,4 +1,4 @@
-import { ProgramDetailPageClient } from '../../../_components/pages/program-detail-page-client';
+import { ProgramDetailPageClient } from './_components/program-detail-page-client';
 
 export default function ProgramDetailPage() {
   return <ProgramDetailPageClient />;
