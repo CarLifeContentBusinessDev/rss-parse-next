@@ -99,3 +99,39 @@ export async function PATCH(
     return toErrorResponse(500, 'UPDATE_FAILED', `Failed to patch episode: ${details}`);
   }
 }
+
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await context.params;
+    if (!/^\d+$/.test(id)) {
+      return toErrorResponse(400, 'INVALID_REQUEST', 'id must be numeric');
+    }
+
+    const body = (await request.json().catch(() => ({}))) as {
+      tablePreset?: TablePreset;
+    };
+    const preset = resolvePreset(body.tablePreset ?? null);
+    const tables = preset === 'main' ? MAIN_TABLES : TEST_TABLES;
+
+    const { data, error } = await supabase.from(tables.episodes).delete().eq('id', id).select('id').maybeSingle();
+    if (error) throw error;
+    if (!data) return toErrorResponse(404, 'NOT_FOUND', 'episode not found');
+
+    return NextResponse.json(
+      {
+        ok: true,
+        data: {
+          deletedId: data.id,
+        },
+      },
+      { status: 200 },
+    );
+  } catch (error) {
+    const details = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[api/content/episode/:id] delete failed', error);
+    return toErrorResponse(500, 'DELETE_FAILED', `Failed to delete episode: ${details}`);
+  }
+}
