@@ -1,191 +1,43 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
 import { SectionCard } from '../section-card';
 import { inputClass } from '../runtime-options';
-
-type TablePreset = 'test' | 'main';
-
-type CountryContentItem = {
-  id: number;
-  title: string;
-  subtitle: string | null;
-  img_url: string | null;
-  type: string | null;
-  language: string[] | string | null;
-  popularOrder: number | null;
-};
-
-type QueryResult = {
-  ok: boolean;
-  data?: {
-    country: string;
-    tablePreset: TablePreset;
-    items: CountryContentItem[];
-    pagination: {
-      limit: number;
-      totalPrograms: number;
-      totalPages: number;
-      nextCursor: string | null;
-      hasMore: boolean;
-    };
-    stats?: {
-      rankMatchedCount: number;
-    };
-  };
-  error?: { code: string; message: string };
-};
-
-type RankFilter = 'all' | 'ranked' | 'unranked';
-type SortKey = 'rankAsc' | 'rankDesc' | 'titleAsc' | 'titleDesc' | 'idDesc';
-const countryOptions = ['KO', 'EN', 'DE', 'JP', 'IT', 'ES', 'UK'] as const;
-type CountryOption = (typeof countryOptions)[number];
+import { CountryOption, countryOptions, RankFilter, SortKey, TablePreset } from './country-contents.types';
+import { useCountryContentsQuery } from './use-country-contents-query';
+import { useCountryContentsView } from './use-country-contents-view';
 
 export function CountryContentsPageClient() {
   const searchParams = useSearchParams();
-  const rawInitialCountry = (searchParams.get('country') ?? 'KO').toUpperCase();
-  const initialCountry: CountryOption = countryOptions.includes(rawInitialCountry as CountryOption)
-    ? (rawInitialCountry as CountryOption)
-    : 'KO';
-  const initialTablePreset = searchParams.get('tablePreset') === 'test' ? 'test' : 'main';
+  const {
+    country,
+    setCountry,
+    tablePreset,
+    setTablePreset,
+    limit,
+    cursorStack,
+    nextCursor,
+    hasMore,
+    totalPrograms,
+    totalPages,
+    rankMatchedCount,
+    loading,
+    error,
+    items,
+    onSubmit,
+    onNextPage,
+    onPrevPage,
+  } = useCountryContentsQuery({
+    initialCountryRaw: searchParams.get('country'),
+    initialTablePresetRaw: searchParams.get('tablePreset'),
+  });
 
-  const [country, setCountry] = useState(initialCountry);
-  const [tablePreset, setTablePreset] = useState<TablePreset>(initialTablePreset);
-  const [limit] = useState(24);
-  const [currentCursor, setCurrentCursor] = useState<string | null>(null);
-  const [cursorStack, setCursorStack] = useState<Array<string | null>>([]);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(false);
-  const [totalPrograms, setTotalPrograms] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [rankMatchedCount, setRankMatchedCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [items, setItems] = useState<CountryContentItem[]>([]);
-  const [searchKeyword, setSearchKeyword] = useState('');
-  const [rankFilter, setRankFilter] = useState<RankFilter>('all');
-  const [sortKey, setSortKey] = useState<SortKey>('rankAsc');
-
-  const loadContents = async (
-    nextCountry: string,
-    nextPreset: TablePreset,
-    nextCursorInput: string | null,
-  ) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const cursorQuery = nextCursorInput ? `&cursor=${encodeURIComponent(String(nextCursorInput))}` : '';
-      const response = await fetch(
-        `/api/content/by-country?country=${encodeURIComponent(
-          nextCountry,
-        )}&tablePreset=${encodeURIComponent(nextPreset)}&limit=${limit}${cursorQuery}`,
-      );
-      const json = (await response.json()) as QueryResult;
-
-      if (!json.ok || !json.data) {
-        setItems([]);
-        setHasMore(false);
-        setNextCursor(null);
-        setTotalPrograms(0);
-        setTotalPages(1);
-        setRankMatchedCount(0);
-        setError(json.error?.message ?? 'Unknown query failure');
-        return;
-      }
-
-      setItems(json.data.items);
-      setHasMore(json.data.pagination.hasMore);
-      setNextCursor(json.data.pagination.nextCursor);
-      setTotalPrograms(json.data.pagination.totalPrograms);
-      setTotalPages(json.data.pagination.totalPages);
-      setRankMatchedCount(json.data.stats?.rankMatchedCount ?? 0);
-    } catch (queryError) {
-      const message = queryError instanceof Error ? queryError.message : 'Network error';
-      setItems([]);
-      setHasMore(false);
-      setNextCursor(null);
-      setTotalPrograms(0);
-      setTotalPages(1);
-      setRankMatchedCount(0);
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const normalized = country;
-    setCountry(normalized);
-    setCurrentCursor(null);
-    setCursorStack([]);
-    await loadContents(normalized, tablePreset, null);
-  };
-
-  const onNextPage = async () => {
-    if (!nextCursor || loading) return;
-    setCursorStack((prev) => [...prev, currentCursor]);
-    setCurrentCursor(nextCursor);
-    await loadContents(country, tablePreset, nextCursor);
-  };
-
-  const onPrevPage = async () => {
-    if (cursorStack.length === 0 || loading) return;
-    const previousCursor = cursorStack[cursorStack.length - 1] ?? null;
-    setCursorStack((prev) => prev.slice(0, -1));
-    setCurrentCursor(previousCursor);
-    await loadContents(country, tablePreset, previousCursor);
-  };
+  const { searchKeyword, setSearchKeyword, rankFilter, setRankFilter, sortKey, setSortKey, visibleItems } =
+    useCountryContentsView(items);
 
   const pageNumber = cursorStack.length + 1;
-  const visibleItems = useMemo(() => {
-    const keyword = searchKeyword.trim().toLowerCase();
-    let filtered = items.filter((item) => {
-      const passKeyword =
-        keyword.length === 0 ||
-        item.title.toLowerCase().includes(keyword) ||
-        (item.subtitle ?? '').toLowerCase().includes(keyword);
-      const passRank =
-        rankFilter === 'all' ||
-        (rankFilter === 'ranked' && item.popularOrder !== null) ||
-        (rankFilter === 'unranked' && item.popularOrder === null);
-      return passKeyword && passRank;
-    });
-
-    filtered = [...filtered].sort((a, b) => {
-      switch (sortKey) {
-        case 'rankAsc': {
-          const left = a.popularOrder ?? Number.MAX_SAFE_INTEGER;
-          const right = b.popularOrder ?? Number.MAX_SAFE_INTEGER;
-          return left - right;
-        }
-        case 'rankDesc': {
-          const left = a.popularOrder ?? Number.MIN_SAFE_INTEGER;
-          const right = b.popularOrder ?? Number.MIN_SAFE_INTEGER;
-          return right - left;
-        }
-        case 'titleAsc':
-          return a.title.localeCompare(b.title);
-        case 'titleDesc':
-          return b.title.localeCompare(a.title);
-        case 'idDesc':
-          return b.id - a.id;
-        default:
-          return 0;
-      }
-    });
-
-    return filtered;
-  }, [items, rankFilter, searchKeyword, sortKey]);
-
-  useEffect(() => {
-    void loadContents(country, tablePreset, null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return (
     <div className='flex flex-col gap-6'>
