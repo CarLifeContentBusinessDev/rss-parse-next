@@ -17,7 +17,6 @@ type CountryContentItem = {
   type: string | null;
   language: string[] | string | null;
   popularOrder: number | null;
-  latestDuration: string | null;
 };
 
 type QueryResult = {
@@ -41,19 +40,9 @@ type QueryResult = {
 };
 
 type RankFilter = 'all' | 'ranked' | 'unranked';
-type SortKey = 'rankAsc' | 'rankDesc' | 'titleAsc' | 'titleDesc' | 'idDesc' | 'durationDesc';
+type SortKey = 'rankAsc' | 'rankDesc' | 'titleAsc' | 'titleDesc' | 'idDesc';
 const countryOptions = ['KO', 'EN', 'DE', 'JP'] as const;
 type CountryOption = (typeof countryOptions)[number];
-
-function durationToSeconds(input: string | null) {
-  if (!input) return -1;
-  const parts = input.split(':').map((part) => Number(part));
-  if (parts.some((part) => !Number.isFinite(part))) return -1;
-  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  if (parts.length === 2) return parts[0] * 60 + parts[1];
-  if (parts.length === 1) return parts[0];
-  return -1;
-}
 
 export function CountryContentsPageClient() {
   const searchParams = useSearchParams();
@@ -185,8 +174,6 @@ export function CountryContentsPageClient() {
           return b.title.localeCompare(a.title);
         case 'idDesc':
           return b.id - a.id;
-        case 'durationDesc':
-          return durationToSeconds(b.latestDuration) - durationToSeconds(a.latestDuration);
         default:
           return 0;
       }
@@ -276,7 +263,6 @@ export function CountryContentsPageClient() {
               <option value='titleAsc'>Title (A-Z)</option>
               <option value='titleDesc'>Title (Z-A)</option>
               <option value='idDesc'>Newest id</option>
-              <option value='durationDesc'>Duration (longest)</option>
             </select>
           </div>
         </div>
@@ -356,9 +342,6 @@ export function CountryContentsPageClient() {
                     <span className='rounded-md bg-zinc-100 px-2 py-1'>id: {item.id}</span>
                     <span className='rounded-md bg-zinc-100 px-2 py-1'>
                       rank: {item.popularOrder ?? '-'}
-                    </span>
-                    <span className='rounded-md bg-zinc-100 px-2 py-1'>
-                      duration: {item.latestDuration ?? '-'}
                     </span>
                     {item.type ? <span className='rounded-md bg-zinc-100 px-2 py-1'>{item.type}</span> : null}
                     {item.language ? (
