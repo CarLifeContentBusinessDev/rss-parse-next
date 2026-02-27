@@ -76,6 +76,10 @@ Never print secrets in logs or commit `.env`.
   - Add a dedicated panel component under `src/app/_components/panels/`.
   - Wire rendering in `src/app/page.tsx`.
 - Reuse existing primitives (`SectionCard`, `RuntimeOptions`, `ProgressBar`) before creating new wrappers.
+- Keep component files small and focused:
+  - Soft limit: around 200 lines per component file.
+  - If a file approaches/exceeds 200 lines, split into domain-focused child components (`types`, `view`, `item`, `controls`).
+  - Keep data-fetch/container logic separate from dense presentational blocks where possible.
 
 ## 7) API Contracts (Current)
 
