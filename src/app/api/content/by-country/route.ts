@@ -13,6 +13,8 @@ const COUNTRY_ALIAS_TO_CANONICAL: Record<string, string> = {
   kr: 'ko',
   ko: 'ko',
   us: 'en',
+  uk: 'uk',
+  gb: 'uk',
   en: 'en',
   de: 'de',
   ja: 'jp',
@@ -22,6 +24,7 @@ const COUNTRY_ALIAS_TO_CANONICAL: Record<string, string> = {
 const POPULAR_THEME_BY_COUNTRY: Record<string, number> = {
   ko: 8,
   en: 12,
+  uk: 18,
   de: 15,
   jp: 19,
 };
