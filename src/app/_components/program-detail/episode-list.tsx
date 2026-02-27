@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { AudioControls, AudioState } from 'react-global-audio';
 
 import { EpisodeItem } from './types';
+const AUDIO_TITLE_MAP_KEY = 'globalAudioTitleMap';
 
 type EpisodePatch = {
   title?: string | null;
@@ -73,6 +74,12 @@ export function EpisodeList({
                           if (audioState.src === audioSrc && audioState.isPlaying) {
                             controls.pause();
                             return;
+                          }
+                          if (typeof window !== 'undefined') {
+                            const raw = window.sessionStorage.getItem(AUDIO_TITLE_MAP_KEY);
+                            const parsed = raw ? (JSON.parse(raw) as Record<string, string>) : {};
+                            parsed[audioSrc] = episode.title;
+                            window.sessionStorage.setItem(AUDIO_TITLE_MAP_KEY, JSON.stringify(parsed));
                           }
                           void controls.play(audioSrc);
                         }}
