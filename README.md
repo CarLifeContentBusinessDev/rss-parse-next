@@ -38,6 +38,8 @@ npm run dev
 - `EXCEL_HEADER_SKIP`, `MIN_RANK`, `MAX_RANK`
 - `SYNC_CATEGORY`, `GLOBAL_CATEGORY_ID`, `SYNC_THEMES`, `THEME_ID`
 
+파일 다운로드/압축 시 오디오는 `m4a(aac, mono, 64k)`로 변환되고 이미지는 `webp`로 변환됩니다.
+
 ## API
 
 - `POST /api/sync/rss` (`application/json`): `{ rssUrl, options? }`
