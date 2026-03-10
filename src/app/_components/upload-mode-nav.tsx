@@ -25,6 +25,7 @@ export function UploadModeNav() {
     [pathname],
   );
   const [isPodrssOpen, setIsPodrssOpen] = useState(pathname.startsWith('/podrss'));
+  const showPodrssChildren = isPodrssOpen || pathname.startsWith('/podrss');
 
   return (
     <Card className='overflow-hidden'>
@@ -74,14 +75,17 @@ export function UploadModeNav() {
                   </div>
                   <div className='pt-1'>
                     <ChevronDown
-                      className={`h-4 w-4 transition-transform ${isPodrssOpen ? 'rotate-180' : ''}`}
+                      className={`h-4 w-4 transition-transform ${showPodrssChildren ? 'rotate-180' : ''}`}
                     />
                   </div>
                 </button>
-                {isPodrssOpen && (
+                {showPodrssChildren && (
                   <div className='mt-3 space-y-1.5 border-t border-zinc-200/80 pt-3'>
                     {meta.children?.map((child) => {
-                      const childActive = pathname === child.href;
+                      const childActive =
+                        pathname === child.href ||
+                        (pathname === uploadModeMeta.podrss.href &&
+                          child.href === '/podrss/excel-channel');
                       return (
                         <Link
                           key={child.href}
