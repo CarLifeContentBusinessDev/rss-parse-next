@@ -1,14 +1,18 @@
+import { ReactNode } from 'react';
+
+import { Label as BaseLabel } from '@/components/ui/label';
+
 export const Label = ({
   children,
   required,
+  htmlFor,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   required?: boolean;
+  htmlFor?: string;
 }) => (
-  <label className="block text-m font-semibold text-gray-300 mb-1.5">
+  <BaseLabel htmlFor={htmlFor} className='mb-1.5 block'>
     {children}
-    {required && <span className="text-key-color ml-0.5">*</span>}
-  </label>
+    {required ? <span className='ml-0.5 text-teal-600'>*</span> : null}
+  </BaseLabel>
 );
-
-
