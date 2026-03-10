@@ -1,31 +1,33 @@
-"use client";
+'use client';
 
-import type { PodcastResult } from "@/app/podrss/_lib/entities/types";
-import { manualAppleIdApi } from "@/app/podrss/_lib/features/manual-lookup/api/manualAppleIdApi";
-import { TOAST_IDS } from "@/app/podrss/_lib/shared/constants/toastIds";
-import { Input } from "@/app/podrss/_lib/shared/ui/Input";
-import { Label } from "@/app/podrss/_lib/shared/ui/Label";
-import { ResultTable } from "@/app/podrss/_lib/shared/ui/ResultTable";
-import { SectionTitle } from "@/app/podrss/_lib/shared/ui/SectionTitle";
-import { handleApiError } from "@/app/podrss/_lib/shared/utils/handleApiError";
-import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
+import type { PodcastResult } from '@/app/podrss/_lib/entities/types';
+import { manualAppleIdApi } from '@/app/podrss/_lib/features/manual-lookup/api/manualAppleIdApi';
+import { TOAST_IDS } from '@/app/podrss/_lib/shared/constants/toastIds';
+import { Input } from '@/app/podrss/_lib/shared/ui/Input';
+import { Label } from '@/app/podrss/_lib/shared/ui/Label';
+import { ResultTable } from '@/app/podrss/_lib/shared/ui/ResultTable';
+import { SectionTitle } from '@/app/podrss/_lib/shared/ui/SectionTitle';
+import { handleApiError } from '@/app/podrss/_lib/shared/utils/handleApiError';
+import { SectionCard } from '@/app/_components/section-card';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 
 interface FormState {
   appleId: string;
   country?: string;
 }
 
-const STORAGE_KEY = "manualAppleIdForm";
+const STORAGE_KEY = 'manualAppleIdForm';
 
 const INITIAL_FORM: FormState = {
-  appleId: "",
-  country: "",
+  appleId: '',
+  country: '',
 };
 
 const getInitialForm = (): FormState => {
-  if (typeof window === "undefined") return INITIAL_FORM;
+  if (typeof window === 'undefined') return INITIAL_FORM;
 
   const saved = localStorage.getItem(STORAGE_KEY);
   if (!saved) return INITIAL_FORM;
@@ -44,29 +46,28 @@ export const ManualAppleIdPage = () => {
   const [form, setForm] = useState<FormState>(getInitialForm);
   const [submitted, setSubmitted] = useState(false);
   const [results, setResults] = useState<PodcastResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // form 변경될 때 자동 저장
   useEffect(() => {
-    const formToSave = { ...form };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(formToSave));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...form }));
   }, [form]);
 
   const set = (key: keyof FormState, value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const [isLoading, setIsLoading] = useState(false);
   const handleSubmitJson = async () => {
-    if (!form.appleId)
-      return toast.error("Apple ID를 입력해주세요.", {
+    if (!form.appleId) {
+      return toast.error('Apple ID를 입력해주세요.', {
         id: TOAST_IDS.manualAppleId.warning,
       });
+    }
 
     try {
       setIsLoading(true);
       const data = await manualAppleIdApi({ ...form });
       setResults(data);
       setSubmitted(true);
-      toast.success("분석이 완료되었습니다.", {
+      toast.success('분석이 완료되었습니다.', {
         id: TOAST_IDS.manualAppleId.success,
       });
     } catch (error) {
@@ -78,84 +79,79 @@ export const ManualAppleIdPage = () => {
 
   const handleReset = () => {
     localStorage.removeItem(STORAGE_KEY);
-    setForm({
-      ...INITIAL_FORM,
-    });
+    setForm({ ...INITIAL_FORM });
   };
 
   return (
-    <div className="flex flex-col max-w-[95%] mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-slate-100 mb-1">
-          수동 Apple ID로 검색
-        </h2>
-        <p className="text-m text-gray-400">
-          수동으로 입력한 Apple ID를 기준으로 RSS URL을 반환합니다.
-        </p>
-      </div>
-
-      <div className="px-10">
-        {/* 컬럼 설정 */}
-        <SectionTitle>조회 조건</SectionTitle>
-        <div className="grid grid-cols-2 gap-3 mb-16">
+    <div className='space-y-6'>
+      <SectionCard
+        title='수동 Apple ID 조회'
+        subtitle='Apple ID를 직접 입력해 RSS 데이터를 조회하고, 필요하면 국가 코드로 범위를 좁힙니다.'
+      >
+        <div className='space-y-6'>
           <div>
-            <Label required>Apple ID</Label>
-            <Input
-              placeholder="ex) id123456789"
-              value={form.appleId}
-              onChange={(e) => set("appleId", e.target.value)}
-            />
-          </div>
-          <div>
-            <Label>국가 코드</Label>
-            <Input
-              placeholder="ex) US, KR, JP"
-              value={form.country}
-              onChange={(e) => set("country", e.target.value)}
-            />
+            <SectionTitle>조회 조건</SectionTitle>
+            <div className='grid gap-4 md:grid-cols-2'>
+              <div>
+                <Label required>Apple ID</Label>
+                <Input
+                  placeholder='예: id123456789'
+                  value={form.appleId}
+                  onChange={(e) => set('appleId', e.target.value)}
+                />
+              </div>
+              <div>
+                <Label>국가 코드</Label>
+                <Input
+                  placeholder='예: US, KR, JP'
+                  value={form.country}
+                  onChange={(e) => set('country', e.target.value)}
+                />
+              </div>
+            </div>
           </div>
         </div>
-        {/* 버튼 영역 */}
-        <div className="flex gap-3">
-          <button
-            disabled={isLoading}
-            onClick={handleSubmitJson}
-            className="flex-1 bg-key-color hover:bg-light-key-color text-white font-semibold px-5 py-4 rounded-xl transition-all text-sm cursor-pointer"
-          >
-            {isLoading ? (
-              <span className="flex items-center justify-center gap-2">
-                <Loader2 className="animate-spin w-4 h-4" />
-                분석 중...
-              </span>
-            ) : (
-              "분석 시작"
-            )}
-          </button>
+      </SectionCard>
 
-          <button
-            onClick={handleReset}
-            className="px-5 bg-gray-600 hover:bg-gray-500 text-white rounded-xl text-sm transition-all cursor-pointer"
-          >
-            설정 초기화
-          </button>
+      <SectionCard
+        title='작업 실행'
+        subtitle='현재 입력값으로 조회를 실행하고, 결과를 이 화면에서 바로 검토하거나 내려받을 수 있습니다.'
+      >
+        <div className='rounded-2xl border border-zinc-200 bg-zinc-50/80 p-4'>
+          <div className='flex flex-wrap items-center gap-3'>
+            <Button type='button' size='lg' onClick={handleSubmitJson} disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                  조회 중...
+                </>
+              ) : (
+                '조회 시작'
+              )}
+            </Button>
+            <Button type='button' variant='outline' size='lg' onClick={handleReset}>
+              설정 초기화
+            </Button>
+            <p className='text-xs text-zinc-500'>
+              요청 로직은 그대로 두고, 콘솔 UI만 통합했습니다.
+            </p>
+          </div>
         </div>
-      </div>
+      </SectionCard>
 
-      {/* 결과 */}
-      {submitted && results && (
-        <div className="mt-6 px-10">
-          <SectionTitle>결과</SectionTitle>
+      {submitted ? (
+        <div className='space-y-3'>
+          <div>
+            <h2 className='text-lg font-semibold text-zinc-900'>결과</h2>
+            <p className='text-sm text-zinc-500'>반환된 항목을 확인하고 필요하면 엑셀로 내려받을 수 있습니다.</p>
+          </div>
           <ResultTable
             results={results}
-            fileName={`result_${form.appleId ?? "result"}.xlsx`}
-            type="manualAppleId"
+            fileName={`result_${form.appleId ?? 'result'}.xlsx`}
+            type='manualAppleId'
           />
         </div>
-      )}
+      ) : null}
     </div>
   );
 };
-
-
-
