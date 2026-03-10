@@ -1,6 +1,6 @@
-import { Input } from "@/app/podrss/_lib/shared/ui/Input";
-import { Label } from "@/app/podrss/_lib/shared/ui/Label";
-import { SectionTitle } from "@/app/podrss/_lib/shared/ui/SectionTitle";
+import { Input } from '@/app/podrss/_lib/shared/ui/Input';
+import { Label } from '@/app/podrss/_lib/shared/ui/Label';
+import { SectionTitle } from '@/app/podrss/_lib/shared/ui/SectionTitle';
 
 interface ExcelFormFieldsProps {
   form: {
@@ -19,91 +19,84 @@ interface ExcelFormFieldsProps {
 export const ExcelFormFields = ({ form, set }: ExcelFormFieldsProps) => {
   return (
     <>
-      {/* 시트 설정 */}
       <SectionTitle>시트 설정</SectionTitle>
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className='mb-6 grid gap-4 md:grid-cols-2'>
         <div>
-          <Label required>시트명</Label>
+          <Label required>시트 이름</Label>
           <Input
-            placeholder="ex) US_미국"
+            placeholder='예: US_Podcasts'
             value={form.sheetName}
-            onChange={(e) => set("sheetName", e.target.value)}
+            onChange={(e) => set('sheetName', e.target.value)}
           />
         </div>
         <div>
           <Label required>헤더 행</Label>
           <Input
-            min="1"
-            placeholder="ex) 1"
+            min='1'
+            placeholder='예: 1'
             value={form.headerRow}
-            onChange={(e) => set("headerRow", e.target.value)}
+            onChange={(e) => set('headerRow', e.target.value)}
           />
         </div>
         <div>
           <Label required>시작 행</Label>
           <Input
-            min="1"
-            placeholder="ex) 3"
+            min='1'
+            placeholder='예: 3'
             value={form.startRow}
-            onChange={(e) => set("startRow", e.target.value)}
+            onChange={(e) => set('startRow', e.target.value)}
           />
         </div>
         <div>
           <Label required>종료 행</Label>
           <Input
-            min="1"
-            placeholder="ex) 100"
+            min='1'
+            placeholder='예: 100'
             value={form.endRow}
-            onChange={(e) => set("endRow", e.target.value)}
+            onChange={(e) => set('endRow', e.target.value)}
           />
         </div>
       </div>
 
-      {/* 컬럼 설정 */}
-      <SectionTitle>컬럼 설정</SectionTitle>
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <SectionTitle>컬럼 매핑</SectionTitle>
+      <div className='mb-6 grid gap-4 xl:grid-cols-3'>
         <div>
           <Label required>채널명 컬럼</Label>
           <Input
-            placeholder="ex) 채널명"
+            placeholder='예: Channel Name'
             value={form.channelNameColumn}
-            onChange={(e) => set("channelNameColumn", e.target.value)}
+            onChange={(e) => set('channelNameColumn', e.target.value)}
           />
         </div>
         <div>
           <Label required>Apple ID 컬럼</Label>
           <Input
-            placeholder="ex) 애플 ID"
+            placeholder='예: Apple ID'
             value={form.appleIdColumn}
-            onChange={(e) => set("appleIdColumn", e.target.value)}
+            onChange={(e) => set('appleIdColumn', e.target.value)}
           />
         </div>
         <div>
           <Label required>RSS 컬럼</Label>
           <Input
-            placeholder="ex) RSS"
+            placeholder='예: RSS'
             value={form.rssColumn}
-            onChange={(e) => set("rssColumn", e.target.value)}
+            onChange={(e) => set('rssColumn', e.target.value)}
           />
         </div>
       </div>
 
-      {/* 기타 설정 */}
-      <SectionTitle>기타 설정</SectionTitle>
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <SectionTitle>추가 옵션</SectionTitle>
+      <div className='mb-2 grid gap-4 md:grid-cols-2'>
         <div>
           <Label>국가 코드</Label>
           <Input
-            placeholder="ex) US, KR, JP"
+            placeholder='예: US, KR, JP'
             value={form.country}
-            onChange={(e) => set("country", e.target.value)}
+            onChange={(e) => set('country', e.target.value)}
           />
         </div>
       </div>
     </>
   );
 };
-
-
-
-
