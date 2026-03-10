@@ -132,7 +132,9 @@ Vercel 프로젝트 Settings > Environment Variables에 아래 값 등록:
 ```json
 {
   "rssUrl": "https://example.com/feed.xml",
-  "options": {}
+  "options": {
+    "categoryId": 123
+  }
 }
 ```
 

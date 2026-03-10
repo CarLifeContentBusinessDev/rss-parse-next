@@ -7,6 +7,7 @@ export type SyncRuntimeOptions = {
   episodeLimit: number;
   downloadFiles: boolean;
   downloadLimit: number;
+  audioBitrate: string;
   imageTargetMaxKb: number;
   keepLocalFiles: boolean;
   excelHeaderSkip: number;
@@ -14,6 +15,7 @@ export type SyncRuntimeOptions = {
   maxRank: number | null;
   syncCategory: boolean;
   globalCategoryId: number;
+  categoryId?: number;
   syncThemes: boolean;
   themeId: number;
   tables: {
@@ -33,6 +35,7 @@ export const DEFAULT_SYNC_OPTIONS: SyncRuntimeOptions = {
   episodeLimit: 4,
   downloadFiles: true,
   downloadLimit: 10,
+  audioBitrate: '64k',
   imageTargetMaxKb: 50,
   keepLocalFiles: false,
   excelHeaderSkip: 2,
@@ -40,6 +43,7 @@ export const DEFAULT_SYNC_OPTIONS: SyncRuntimeOptions = {
   maxRank: 60,
   syncCategory: true,
   globalCategoryId: 65,
+  categoryId: undefined,
   syncThemes: true,
   themeId: 16,
   tables: {

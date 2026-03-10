@@ -22,6 +22,15 @@ function toErrorResponse(status: number, code: string, message: string, details?
   return NextResponse.json(body, { status });
 }
 
+function isValidHttpUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as {
@@ -32,6 +41,10 @@ export async function POST(request: Request) {
 
     if (!rssUrl) {
       return toErrorResponse(400, 'INVALID_REQUEST', 'rssUrl is required');
+    }
+
+    if (!isValidHttpUrl(rssUrl)) {
+      return toErrorResponse(400, 'INVALID_REQUEST', 'rssUrl must be a valid http/https URL');
     }
 
     const jobId = createJob('rss', { rssUrl, options: body.options });

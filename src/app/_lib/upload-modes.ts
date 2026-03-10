@@ -16,30 +16,30 @@ type UploadModeMeta = {
 
 export const uploadModeMeta: Record<UploadMode, UploadModeMeta> = {
   rss: {
-    title: 'RSS Link Upload',
-    description: 'Trigger a sync job from a single RSS feed URL.',
+    title: 'RSS 링크 실행',
+    description: 'RSS 피드 URL 하나로 동기화 작업을 실행합니다.',
     href: '/sync/rss',
   },
   excel: {
-    title: 'Excel File Upload',
-    description: 'Batch sync from an .xlsx file with sheet options.',
+    title: 'Excel 파일 실행',
+    description: '.xlsx 파일과 시트 옵션으로 배치 동기화를 실행합니다.',
     href: '/sync/excel',
   },
   contents: {
-    title: 'Country Contents',
-    description: 'Browse content list filtered by country code.',
+    title: '국가별 콘텐츠',
+    description: '국가 코드 기준으로 콘텐츠 목록을 조회합니다.',
     href: '/sync/contents',
   },
   podrss: {
-    title: 'PodRSS Console',
-    description: 'Open PodRSS tools for channel/apple-id lookup flows.',
+    title: 'PodRSS 도구',
+    description: '채널 및 Apple ID 조회용 PodRSS 도구를 엽니다.',
     href: '/podrss',
     children: [
-      { title: 'Excel Channel', href: '/podrss/excel-channel' },
-      { title: 'Excel Apple ID', href: '/podrss/excel-apple-id' },
-      { title: 'Manual Channel', href: '/podrss/manual-channel' },
-      { title: 'Manual Apple ID', href: '/podrss/manual-apple-id' },
-      { title: 'Top Podcast', href: '/podrss/top-podcast' },
+      { title: '엑셀 채널', href: '/podrss/excel-channel' },
+      { title: '엑셀 Apple ID', href: '/podrss/excel-apple-id' },
+      { title: '수동 채널', href: '/podrss/manual-channel' },
+      { title: '수동 Apple ID', href: '/podrss/manual-apple-id' },
+      { title: '상위 팟캐스트', href: '/podrss/top-podcast' },
     ],
   },
 };

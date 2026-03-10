@@ -6,6 +6,7 @@ import {
   downloadEpisodeFiles,
   downloadEpisodesFromDb,
   sanitizeFileName,
+  syncCategoryMapping,
   validateSyncEnv,
 } from '@/services/syncPodcastCommon';
 import { PartialSyncRuntimeOptions, resolveSyncOptions } from '@/config/syncRuntime';
@@ -70,6 +71,7 @@ export async function syncPodcastFromRss({
       .eq('program_id', existingProgram.id);
 
     if ((count ?? 0) >= config.episodeLimit) {
+      await syncCategoryMapping(existingProgram.id, config.categoryId, config.countryCode, config);
       onProgress?.(35, 'existing episodes already sufficient');
       if (config.downloadFiles) {
         onProgress?.(70, 'downloading existing episode files');
@@ -134,6 +136,8 @@ export async function syncPodcastFromRss({
     if (error) throw error;
     finalProgram = data;
   }
+
+  await syncCategoryMapping(finalProgram.id, config.categoryId, config.countryCode, config);
 
   const { count } = await supabase
     .from(config.tables.episodes)

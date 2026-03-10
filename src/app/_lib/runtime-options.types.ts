@@ -12,6 +12,7 @@ export type RuntimeState = {
   episodeLimit: string;
   downloadFiles: boolean;
   downloadLimit: string;
+  audioBitrate: string;
   imageTargetMaxKb: string;
   keepLocalFiles: boolean;
   minRank: string;

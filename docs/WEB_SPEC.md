@@ -39,9 +39,10 @@
   - `countryCode`: `JP/IT/...`
   - `episodeLimit`, `downloadLimit`, `downloadFiles`, `syncCategory`, `syncThemes`
   - `rssUrl` (rss 모드)
+  - `options.categoryId` (rss 모드, `syncCategory` 사용 시 선택 입력)
   - `excelFile` (excel 모드)
 - 검증
-  - rss 모드: `rssUrl` 필수
+  - rss 모드: `rssUrl` 필수, `http/https` URL 형식 검증
   - excel 모드: 파일 필수, 확장자 `xlsx`
 
 ### F2. 작업 실행(백엔드)

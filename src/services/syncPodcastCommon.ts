@@ -43,6 +43,7 @@ function cleanupDirIfEmpty(dirPath: string, options: SyncRuntimeOptions) {
 export async function downloadAndCompressAudioFromUrlToRecommendedM4a(
   audioUrl: string,
   outputPath: string,
+  audioBitrate: string,
 ) {
   if (fs.existsSync(outputPath)) return;
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
@@ -60,7 +61,7 @@ export async function downloadAndCompressAudioFromUrlToRecommendedM4a(
         '-c:a',
         'aac',
         '-b:a',
-        '64k',
+        audioBitrate,
         '-ar',
         '44100',
         '-movflags',
@@ -241,7 +242,11 @@ export async function downloadEpisodeFiles(
     if (episode.audio_file) {
       const m4aPath = path.join(baseDir, `${safeTitle}.m4a`);
       try {
-        await downloadAndCompressAudioFromUrlToRecommendedM4a(episode.audio_file, m4aPath);
+        await downloadAndCompressAudioFromUrlToRecommendedM4a(
+          episode.audio_file,
+          m4aPath,
+          options.audioBitrate,
+        );
         if (uploadToR2) {
           const audioKey = `${r2Prefix}/${countryPrefix}-episodes-audio/program/${safeProgramTitle}/${safeTitle}.m4a`;
           updatePayload.audio_file = await uploadLocalFileToR2(m4aPath, audioKey);
