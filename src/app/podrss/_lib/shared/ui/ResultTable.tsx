@@ -1,26 +1,27 @@
-import type { PodcastResult } from "@/app/podrss/_lib/entities/types";
-import { CopyButton } from "@/app/podrss/_lib/shared/ui/CopyButton";
-import { downloadExcel } from "@/app/podrss/_lib/shared/utils/downloadExcel";
-import { CopyCell } from "./CopyCell";
-import { getColumnsByType } from "@/app/podrss/_lib/entities/config/columns";
-import { Download } from "lucide-react";
+import { Download } from 'lucide-react';
+
+import type { PodcastResult } from '@/app/podrss/_lib/entities/types';
+import { getColumnsByType } from '@/app/podrss/_lib/entities/config/columns';
+import { downloadExcel } from '@/app/podrss/_lib/shared/utils/downloadExcel';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+
+import { CopyButton } from './CopyButton';
+import { CopyCell } from './CopyCell';
 
 interface ResultTableProps {
   results: PodcastResult[];
   fileName?: string;
-  type?: "manualAppleId" | "manualChannel" | "excel" | "topPodcast";
+  type?: 'manualAppleId' | 'manualChannel' | 'excel' | 'topPodcast';
 }
 
-const COPYABLE_KEYS: (keyof PodcastResult)[] = [
-  "channelName",
-  "appleId",
-  "rssUrl",
-];
+const COPYABLE_KEYS: (keyof PodcastResult)[] = ['channelName', 'appleId', 'rssUrl'];
 
 export const ResultTable = ({
   results,
-  fileName = "result.xlsx",
-  type = "excel",
+  fileName = 'result.xlsx',
+  type = 'excel',
 }: ResultTableProps) => {
   const handleDownloadExcel = () => {
     downloadExcel(results, fileName, type);
@@ -29,73 +30,61 @@ export const ResultTable = ({
   const columns = getColumnsByType(type);
 
   return (
-    <div className="border border-gray-500 rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-        <span className="text-sm text-gray-400 tracking-widest uppercase">
-          총 {results.length}개 항목
-        </span>
-        <button
-          onClick={handleDownloadExcel}
-          className="text-xs bg-secondary-color hover:bg-light-secondary-color text-white font-semibold px-3 py-2 rounded-lg transition-all cursor-pointer"
-        >
-          <Download className="inline mr-1 h-5" />
+    <Card>
+      <CardHeader className='flex flex-row items-center justify-between gap-3 border-b border-zinc-200 pb-4'>
+        <div className='text-sm font-medium text-zinc-600'>총 {results.length}건</div>
+        <Button type='button' variant='secondary' size='sm' onClick={handleDownloadExcel}>
+          <Download className='h-4 w-4' />
           엑셀 다운로드
-        </button>
-      </div>
-
-      <div className="overflow-x-auto overflow-y-auto max-h-100 scrollbar scrollbar-thumb-gray-600 scrollbar-track-gray-900 scrollbar-thumb">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="border-b border-gray-600">
-              {columns.map(({ key, label }) => (
-                <th
-                  key={key}
-                  className="px-4 py-3 text-sm text-slate-500 tracking-wider uppercase"
-                >
-                  <div className="flex items-center justify-center gap-2">
-                    {label}
-                    {COPYABLE_KEYS.includes(key) && (
-                      <CopyButton
-                        text={results.map((r) => String(r[key])).join("\n")}
-                      />
-                    )}
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            {results.map((r, i) => (
-              <tr key={i} className="border-b border-gray-700">
-                {columns.map(({ key }) => (
-                  <td
-                    key={String(key)}
-                    className={`px-4 py-3 text-sm text-center ${
-                      key === "status"
-                        ? r.status === "SUCCESS"
-                          ? "text-secondary-color"
-                          : r.status === "FAILED"
-                            ? "text-red-500"
-                            : "text-gray-400"
-                        : "text-gray-400"
-                    }`}
+        </Button>
+      </CardHeader>
+      <CardContent className='px-0 pb-0'>
+        <div className='max-h-[520px] overflow-auto'>
+          <table className='w-full border-collapse text-sm'>
+            <thead className='sticky top-0 bg-white'>
+              <tr className='border-b border-zinc-200'>
+                {columns.map(({ key, label }) => (
+                  <th
+                    key={key}
+                    className='px-4 py-3 text-center text-xs font-semibold tracking-[0.18em] text-zinc-500 uppercase'
                   >
-                    {COPYABLE_KEYS.includes(key) ? (
-                      <CopyCell value={String(r[key] ?? "")} />
-                    ) : (
-                      String(r[key] ?? "")
-                    )}
-                  </td>
+                    <div className='flex items-center justify-center gap-2'>
+                      <span>{label}</span>
+                      {COPYABLE_KEYS.includes(key) ? (
+                        <CopyButton text={results.map((row) => String(row[key] ?? '')).join('\n')} />
+                      ) : null}
+                    </div>
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+            </thead>
+            <tbody>
+              {results.map((row, rowIndex) => (
+                <tr key={rowIndex} className='border-b border-zinc-100 odd:bg-zinc-50/60'>
+                  {columns.map(({ key }) => (
+                    <td
+                      key={String(key)}
+                      className={cn(
+                        'px-4 py-3 text-center align-middle text-zinc-600',
+                        key === 'status' &&
+                          (row.status === 'SUCCESS'
+                            ? 'font-semibold text-emerald-700'
+                            : 'font-semibold text-rose-700'),
+                      )}
+                    >
+                      {COPYABLE_KEYS.includes(key) ? (
+                        <CopyCell value={String(row[key] ?? '')} />
+                      ) : (
+                        String(row[key] ?? '')
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
-
-
-
