@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { Check, Copy } from "lucide-react";
+import { useState } from 'react';
+import { Check, Copy } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+
 interface CopyCellProps {
   value: string;
 }
@@ -14,22 +17,23 @@ export const CopyCell = ({ value }: CopyCellProps) => {
   };
 
   return (
-    <div className="flex items-center justify-center gap-2 group">
-      <span className={"text-gray-300 font-medium truncate max-w-60"}>
-        {value}
-      </span>
-      <button
-        onClick={handleCopy}
-        className={`opacity-0 group-hover:opacity-100 text-xs px-1.5 py-0.5 rounded transition-all cursor-pointer shrink-0 ${
-          copied
-            ? "text-secondary-color"
-            : "bg-white/5 hover:bg-white/10 text-gray-400 hover:text-gray-200"
-        }`}
-      >
-        {value && (copied ? <Check size={14} /> : <Copy size={14} />)}
-      </button>
+    <div className='group flex items-center justify-center gap-2'>
+      <span className='max-w-60 truncate font-medium text-zinc-700'>{value}</span>
+      {value ? (
+        <Button
+          type='button'
+          variant='ghost'
+          size='sm'
+          onClick={handleCopy}
+          className='h-7 px-2 opacity-0 transition group-hover:opacity-100'
+        >
+          {copied ? (
+            <Check className='h-3.5 w-3.5 text-emerald-600' />
+          ) : (
+            <Copy className='h-3.5 w-3.5' />
+          )}
+        </Button>
+      ) : null}
     </div>
   );
 };
-
-
