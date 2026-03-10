@@ -1,31 +1,36 @@
-import { X } from "lucide-react";
+import * as React from 'react';
+import { X } from 'lucide-react';
 
-export const Input = ({
-  ...props
-}: React.InputHTMLAttributes<HTMLInputElement>) => {
-  const handleClear = () => {
-    const event = {
-      target: { value: "" },
-    } as React.ChangeEvent<HTMLInputElement>;
-    props.onChange?.(event);
-  };
+import { Input as BaseInput } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
-  return (
-    <div className="relative">
-      <input
-        {...props}
-        className="w-full border border-gray-500 rounded-lg px-3 py-2 text-m text-slate-200 outline-none focus:border-key-color/70 focus:bg-white/8 transition-all placeholder:text-gray-400 pr-"
-      />
-      {props.value && (
-        <button
-          onClick={handleClear}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-all cursor-pointer text-xs "
-        >
-          <X className="w-4 h-4" />
-        </button>
-      )}
-    </div>
-  );
-};
+export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+  function Input({ className, onChange, value, ...props }, ref) {
+    const handleClear = () => {
+      onChange?.({
+        target: { value: '' },
+      } as React.ChangeEvent<HTMLInputElement>);
+    };
 
-
+    return (
+      <div className='relative'>
+        <BaseInput
+          ref={ref}
+          value={value}
+          onChange={onChange}
+          className={cn(value ? 'pr-10' : undefined, className)}
+          {...props}
+        />
+        {value ? (
+          <button
+            type='button'
+            onClick={handleClear}
+            className='absolute top-1/2 right-3 -translate-y-1/2 text-zinc-400 transition hover:text-zinc-700'
+          >
+            <X className='h-4 w-4' />
+          </button>
+        ) : null}
+      </div>
+    );
+  },
+);
