@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 
 import { MAIN_TABLES, TEST_TABLES } from '@/app/_lib/runtime-options.constants';
 import { resolveSyncOptions } from '@/config/syncRuntime';
+import { getDownloadsCompressDir } from '@/lib/temp-paths';
 import { downloadEpisodeFiles, sanitizeFileName, validateSyncEnv } from '@/services/syncPodcastCommon';
 import { supabase } from '@/lib/supabase';
 
@@ -86,7 +87,7 @@ export async function POST(
       tables,
     });
 
-    const baseDir = path.join(process.cwd(), 'downloads_compress', sanitizeFileName(program.title));
+    const baseDir = getDownloadsCompressDir(sanitizeFileName(program.title));
     const summary = await downloadEpisodeFiles(
       baseDir,
       program.id,

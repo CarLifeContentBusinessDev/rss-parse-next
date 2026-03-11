@@ -3,6 +3,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { isR2Configured, uploadLocalFileToR2 } from '@/lib/r2';
 import { supabase } from '@/lib/supabase';
+import { getDownloadsCompressDir } from '@/lib/temp-paths';
 import { SyncRuntimeOptions } from '@/config/syncRuntime';
 
 export function validateSyncEnv() {
@@ -337,7 +338,7 @@ export async function downloadEpisodesFromDb(
   downloadLimit: number,
   options: SyncRuntimeOptions,
 ) {
-  const baseDir = path.join(process.cwd(), 'downloads_compress', sanitizeFileName(programTitle));
+  const baseDir = getDownloadsCompressDir(sanitizeFileName(programTitle));
   let query = supabase
     .from(options.tables.episodes)
     .select('id,title,audio_file,img_url,date')
@@ -377,7 +378,7 @@ export async function refreshEpisodeAudiosFromDb(
     throw new Error('R2 is not configured, cannot replace audio URLs');
   }
 
-  const baseDir = path.join(process.cwd(), 'downloads_compress', sanitizeFileName(programTitle));
+  const baseDir = getDownloadsCompressDir(sanitizeFileName(programTitle));
   let query = supabase
     .from(options.tables.episodes)
     .select('id,title,audio_file,date')

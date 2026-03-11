@@ -1,6 +1,7 @@
 ﻿import Parser from 'rss-parser';
 import path from 'node:path';
 import { supabase } from '@/lib/supabase';
+import { getDownloadsCompressDir } from '@/lib/temp-paths';
 import { formatDateYYMMDD, formatDuration, retryAsync } from '@/utils/duration';
 import {
   downloadEpisodeFiles,
@@ -215,7 +216,7 @@ export async function syncPodcastFromRss({
   let updatedSupabaseCount = 0;
   if (config.downloadFiles) {
     onProgress?.(85, 'downloading/compressing files');
-    const baseDir = path.join(process.cwd(), 'downloads_compress', sanitizeFileName(programTitle));
+    const baseDir = getDownloadsCompressDir(sanitizeFileName(programTitle));
     const downloadItems =
       config.downloadLimit > 0 ? savedEpisodes.slice(0, config.downloadLimit) : savedEpisodes;
     const summary = await downloadEpisodeFiles(

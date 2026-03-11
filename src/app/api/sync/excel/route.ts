@@ -4,6 +4,7 @@ import path from 'node:path';
 import { NextResponse } from 'next/server';
 import { PartialSyncRuntimeOptions } from '@/config/syncRuntime';
 import { createJob } from '@/jobs/runners';
+import { getJobTmpDir } from '@/lib/temp-paths';
 
 export const runtime = 'nodejs';
 
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
     }
 
     const options = parseOptionsJson(formData.get('optionsJson'));
-    const tmpDir = path.join(process.cwd(), '.job_tmp');
+    const tmpDir = getJobTmpDir();
     await fs.mkdir(tmpDir, { recursive: true });
     const filePath = path.join(tmpDir, `${Date.now()}-${randomUUID()}.xlsx`);
     const buffer = Buffer.from(await excelFile.arrayBuffer());

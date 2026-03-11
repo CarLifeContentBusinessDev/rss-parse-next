@@ -3,6 +3,7 @@ import Parser from 'rss-parser';
 import { MAIN_TABLES, TEST_TABLES } from '@/app/_lib/runtime-options.constants';
 import { PartialSyncRuntimeOptions, resolveSyncOptions } from '@/config/syncRuntime';
 import { supabase } from '@/lib/supabase';
+import { getDownloadsCompressDir } from '@/lib/temp-paths';
 import { downloadEpisodeFiles, sanitizeFileName, validateSyncEnv } from '@/services/syncPodcastCommon';
 import { formatDateYYMMDD, retryAsync } from '@/utils/duration';
 
@@ -111,7 +112,7 @@ export async function refreshAudioFromRssSource({
     throw new Error(`No RSS enclosure matches found for program: ${program.title}`);
   }
 
-  const baseDir = `${process.cwd()}\\downloads_compress\\${sanitizeFileName(program.title)}`;
+  const baseDir = getDownloadsCompressDir(sanitizeFileName(program.title));
   const summary = await downloadEpisodeFiles(
     baseDir,
     program.id,

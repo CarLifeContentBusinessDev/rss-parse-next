@@ -12,6 +12,7 @@ import {
 import { formatDateYYMMDD, formatDuration, retryAsync } from '@/utils/duration';
 import { PartialSyncRuntimeOptions, resolveSyncOptions } from '@/config/syncRuntime';
 import * as XLSX from 'xlsx';
+import { getDownloadsCompressDir } from '@/lib/temp-paths';
 
 type FeedItem = {
   title?: string;
@@ -240,7 +241,7 @@ export async function syncPodcastFromExcel(
   let uploadedCount = 0;
   let updatedSupabaseCount = 0;
   if (config.downloadFiles) {
-    const baseDir = path.join(process.cwd(), 'downloads_compress', sanitizeFileName(programTitle));
+    const baseDir = getDownloadsCompressDir(sanitizeFileName(programTitle));
     const downloadItems =
       config.downloadLimit > 0 ? savedEpisodes.slice(0, config.downloadLimit) : savedEpisodes;
     const summary = await downloadEpisodeFiles(
