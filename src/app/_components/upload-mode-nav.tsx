@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, DatabaseZap, FileSpreadsheet, RadioTower, Rows3 } from 'lucide-react';
+import { AudioLines, ChevronDown, DatabaseZap, FileSpreadsheet, RadioTower, Rows3 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useMemo, useState } from 'react';
@@ -14,6 +14,7 @@ import { uploadModeMeta, uploadModes } from '../_lib/upload-modes';
 const modeIcons = {
   rss: RadioTower,
   excel: FileSpreadsheet,
+  'audio-refresh': AudioLines,
   contents: Rows3,
   podrss: DatabaseZap,
 } as const;

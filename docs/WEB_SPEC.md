@@ -10,7 +10,7 @@
 
 ### 포함
 
-- 작업 생성 UI (Excel 모드, RSS 단건 모드)
+- 작업 생성 UI (Excel 모드, RSS 단건 모드, 오디오 URL 교체 모드)
 - 작업 목록/상세/로그 UI
 - 작업 실행 백엔드 API
 - 백그라운드 워커(기존 서비스 로직 재사용)
@@ -35,15 +35,17 @@
 ### F1. 작업 생성
 
 - 입력 항목
-  - `mode`: `excel | rss`
+  - `mode`: `excel | rss | audio-refresh`
   - `countryCode`: `JP/IT/...`
   - `episodeLimit`, `downloadLimit`, `downloadFiles`, `syncCategory`, `syncThemes`
   - `rssUrl` (rss 모드)
   - `options.categoryId` (rss 모드, `syncCategory` 사용 시 선택 입력)
   - `excelFile` (excel 모드)
+  - `tablePreset` (audio-refresh 모드)
 - 검증
   - rss 모드: `rssUrl` 필수, `http/https` URL 형식 검증
   - excel 모드: 파일 필수, 확장자 `xlsx`
+  - audio-refresh 모드: `country` 필수, `tablePreset`은 `main | test`
 
 ### F2. 작업 실행(백엔드)
 
@@ -64,6 +66,13 @@
 - 처리된 프로그램 수/에피소드 수
 - R2 업로드 성공 수/실패 수
 - Supabase URL 업데이트 성공 수/실패 수
+
+### F5. 오디오 URL 교체
+
+- 운영자가 Excel 파일을 업로드하고 row의 `rssUrl`을 기준으로 원본 RSS를 다시 조회한다.
+- 프로그램 매칭은 `programTitle`, 에피소드 매칭은 `title + date`를 우선 사용한다.
+- 매칭된 RSS `enclosure.url`을 소스로 새 `m4a`를 생성하고 `episodes.audio_file`을 새 R2 URL로 교체한다.
+- 대량 작업이므로 `test` 테이블 검증 후 `main` 적용을 기본 운영 절차로 둔다.
 
 ## 5. 화면(IA)
 

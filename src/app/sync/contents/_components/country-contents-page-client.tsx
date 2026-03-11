@@ -3,14 +3,19 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
+import { ProgressBar } from '../../../_components/progress-bar';
 import { SectionCard } from '../../../_components/section-card';
+import { JobHistory } from '../../../_components/job-history';
 import { inputClass } from '../../../_components/runtime-options';
+import { useSyncJobChannel } from '../../../_hooks/use-sync-job-channel';
+import { AudioRefreshSuccess } from '../../../_lib/sync-types';
 import { CountryOption, countryOptions, RankFilter, SortKey, TablePreset } from '../_types/country-contents.types';
 import { useCountryContentsQuery } from '../_hooks/use-country-contents-query';
 import { useCountryContentsView } from '../_hooks/use-country-contents-view';
 
 export function CountryContentsPageClient() {
   const searchParams = useSearchParams();
+  const channel = useSyncJobChannel<AudioRefreshSuccess['data']>();
   const {
     country,
     setCountry,
@@ -38,6 +43,47 @@ export function CountryContentsPageClient() {
     useCountryContentsView(items);
 
   const pageNumber = cursorStack.length + 1;
+
+  const onRefreshCountryAudio = async () => {
+    channel.queueJob();
+
+    try {
+      const response = await fetch('/api/sync/audio-refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          country,
+          tablePreset,
+          options: {
+            countryCode: country,
+            downloadLimit: 0,
+            audioBitrate: '128k',
+          },
+        }),
+      });
+
+      const json = (await response.json()) as {
+        ok: boolean;
+        data?: { jobId?: string };
+        error?: { code?: string; message?: string; details?: string };
+      };
+
+      if (!response.ok || !json.ok) {
+        const code = json.error?.code ?? 'REQUEST_FAILED';
+        const message =
+          json.error?.details ?? json.error?.message ?? 'Failed to create audio refresh job';
+        channel.setFailure(code, message);
+        return;
+      }
+
+      const jobId = json.data?.jobId;
+      if (!jobId) throw new Error('Failed to create audio refresh job');
+      channel.startJob(jobId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unexpected request failure';
+      channel.setFailure('NETWORK_ERROR', message);
+    }
+  };
 
   return (
     <div className='flex flex-col gap-6'>
@@ -78,6 +124,43 @@ export function CountryContentsPageClient() {
             {loading ? 'Loading...' : 'Load List'}
           </button>
         </form>
+        <div className='mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3'>
+          <div className='flex flex-wrap items-center gap-3'>
+            <button
+              type='button'
+              onClick={() => {
+                void onRefreshCountryAudio();
+              }}
+              disabled={channel.loading}
+              className='rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-500 disabled:opacity-60'
+            >
+              {channel.loading ? 'Refreshing country audio...' : 'Refresh Country Audio URLs'}
+            </button>
+            <p className='text-xs leading-relaxed text-amber-900'>
+              Current filters 기준으로 이 언어/국가 그룹의 오디오 URL 전체 교체 job을 시작합니다.
+            </p>
+          </div>
+          {channel.loading ? (
+            <div className='mt-3'>
+              <ProgressBar value={channel.progress} />
+              <p className='mt-2 text-xs text-amber-950'>
+                {channel.progress}% {channel.message}
+              </p>
+            </div>
+          ) : null}
+          {channel.result && !channel.result.ok ? (
+            <p className='mt-2 text-xs text-rose-700'>
+              [{channel.result.error.code}] {channel.result.error.message}
+            </p>
+          ) : null}
+          {channel.result && channel.result.ok ? (
+            <p className='mt-2 text-xs text-emerald-700'>
+              {channel.result.data.country} processed {channel.result.data.processedPrograms}/
+              {channel.result.data.matchedPrograms}, uploaded {channel.result.data.uploadedCount},
+              updated {channel.result.data.updatedSupabaseCount}
+            </p>
+          ) : null}
+        </div>
       </SectionCard>
 
       <SectionCard title='View Options' subtitle='Sort and filter current page items'>
@@ -125,6 +208,8 @@ export function CountryContentsPageClient() {
           {error}
         </section>
       ) : null}
+
+      <JobHistory entries={channel.history} title='Country Refresh History' />
 
       <SectionCard title={`Programs (Page ${pageNumber} / ${totalPages})`} subtitle={`${totalPrograms} total programs`}>
         <div className='mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600'>

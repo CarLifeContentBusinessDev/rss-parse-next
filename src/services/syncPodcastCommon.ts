@@ -57,7 +57,7 @@ export async function downloadAndCompressAudioFromUrlToRecommendedM4a(
         audioUrl,
         '-vn',
         '-ac',
-        '1',
+        '2',
         '-c:a',
         'aac',
         '-b:a',
@@ -360,4 +360,82 @@ export async function downloadEpisodesFromDb(
     programTitle,
     options,
   );
+}
+
+export async function refreshEpisodeAudiosFromDb(
+  programId: number,
+  country: string,
+  programTitle: string,
+  downloadLimit: number,
+  options: SyncRuntimeOptions,
+) {
+  if (!options.downloadFiles) {
+    return { uploadedCount: 0, updatedSupabaseCount: 0 };
+  }
+
+  if (!isR2Configured()) {
+    throw new Error('R2 is not configured, cannot replace audio URLs');
+  }
+
+  const baseDir = path.join(process.cwd(), 'downloads_compress', sanitizeFileName(programTitle));
+  let query = supabase
+    .from(options.tables.episodes)
+    .select('id,title,audio_file,date')
+    .eq('program_id', programId)
+    .not('audio_file', 'is', null)
+    .order('date', { ascending: false });
+
+  if (downloadLimit > 0) {
+    query = query.limit(downloadLimit);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const episodes = data ?? [];
+  const countryPrefix = country.toLowerCase();
+  const safeProgramTitle = sanitizeFileName(programTitle);
+  const r2Prefix = 'test';
+  let uploadedCount = 0;
+  let updatedSupabaseCount = 0;
+
+  const tasks = episodes.map(async (episode) => {
+    if (!episode.audio_file) return;
+
+    const safeTitle = sanitizeFileName(episode.title || 'untitled');
+    const m4aPath = path.join(baseDir, `${safeTitle}.m4a`);
+
+    try {
+      await downloadAndCompressAudioFromUrlToRecommendedM4a(
+        episode.audio_file,
+        m4aPath,
+        options.audioBitrate,
+      );
+
+      const audioKey = `${r2Prefix}/${countryPrefix}-episodes-audio/program/${safeProgramTitle}/${safeTitle}.m4a`;
+      const audioUrl = await uploadLocalFileToR2(m4aPath, audioKey);
+      uploadedCount += 1;
+
+      const { data: updatedRows, error: updateError } = await supabase
+        .from(options.tables.episodes)
+        .update({ audio_file: audioUrl })
+        .eq('id', episode.id)
+        .select('id');
+
+      if (updateError) throw updateError;
+      if (updatedRows && updatedRows.length > 0) updatedSupabaseCount += updatedRows.length;
+    } finally {
+      cleanupLocalFileIfNeeded(m4aPath, options);
+    }
+  });
+
+  const settled = await Promise.allSettled(tasks);
+  const rejected = settled.filter((item) => item.status === 'rejected');
+  if (rejected.length > 0) {
+    throw new Error(`Audio refresh tasks failed: ${rejected.length}`);
+  }
+
+  cleanupDirIfEmpty(baseDir, options);
+
+  return { uploadedCount, updatedSupabaseCount };
 }

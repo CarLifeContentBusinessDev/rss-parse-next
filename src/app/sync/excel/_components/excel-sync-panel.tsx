@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 import { ProgressBar } from '@/app/_components/progress-bar';
+import { JobHistory } from '@/app/_components/job-history';
 import { RuntimeOptions } from '@/app/_components/runtime-options';
 import { SectionCard } from '@/app/_components/section-card';
 import { CategoryOption } from '@/app/_hooks/use-category-options';
@@ -193,6 +194,8 @@ export function ExcelSyncPanel({
           ) : null}
         </section>
       ) : null}
+
+      <JobHistory entries={channel.history} />
     </div>
   );
 }

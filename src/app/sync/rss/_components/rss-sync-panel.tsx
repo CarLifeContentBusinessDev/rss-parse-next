@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 
 import { ProgressBar } from '../../../_components/progress-bar';
+import { JobHistory } from '../../../_components/job-history';
 import { RuntimeOptions } from '../../../_components/runtime-options';
 import { SectionCard } from '../../../_components/section-card';
 import { CategoryOption } from '../../../_hooks/use-category-options';
@@ -170,6 +171,8 @@ export function RSSSyncPanel({
           </p>
         </section>
       ) : null}
+
+      <JobHistory entries={channel.history} />
     </div>
   );
 }

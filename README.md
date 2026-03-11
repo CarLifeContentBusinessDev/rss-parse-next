@@ -10,6 +10,7 @@ Next.js App Router 기반 RSS/Excel 동기화 웹 도구입니다.
 - Job 큐/상태 관리 (`queued`, `running`, `succeeded`, `failed`)
 - SSE 기반 실시간 진행률 스트리밍
 - Supabase 업데이트 및 선택적 Cloudflare R2 업로드
+- 오디오 재인코딩 기본값: `AAC .m4a`, `128k`, `stereo`, `44.1kHz`
 
 ## 기술 스택
 

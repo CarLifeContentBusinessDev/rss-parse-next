@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { JobEvent, SyncFailure } from '../_lib/sync-types';
+import { JobEvent, JobHistoryEntry, SyncFailure } from '../_lib/sync-types';
 
 type SuccessState<TData> = { ok: true; data: TData };
 type ChannelResult<TData> = SuccessState<TData> | SyncFailure;
@@ -10,7 +10,21 @@ export function useSyncJobChannel<TData>() {
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState('');
   const [result, setResult] = useState<ChannelResult<TData> | null>(null);
+  const [history, setHistory] = useState<JobHistoryEntry[]>([]);
   const sourceRef = useRef<EventSource | null>(null);
+
+  const pushHistory = useCallback((label: string, detail?: string, at?: string) => {
+    const stamp = at ?? new Date().toISOString();
+    setHistory((prev) => [
+      {
+        id: `${stamp}-${prev.length + 1}`,
+        at: stamp,
+        label,
+        detail,
+      },
+      ...prev,
+    ]);
+  }, []);
 
   const closeCurrent = useCallback(() => {
     sourceRef.current?.close();
@@ -26,7 +40,8 @@ export function useSyncJobChannel<TData>() {
   const setFailure = useCallback((code: string, text: string) => {
     setResult({ ok: false, error: { code, message: text } });
     setLoading(false);
-  }, []);
+    pushHistory('failed', `[${code}] ${text}`);
+  }, [pushHistory]);
 
   const queueJob = useCallback(() => {
     closeCurrent();
@@ -34,7 +49,9 @@ export function useSyncJobChannel<TData>() {
     setResult(null);
     setProgress(2);
     setMessage('job queued');
-  }, [closeCurrent]);
+    setHistory([]);
+    pushHistory('queued', 'job queued');
+  }, [closeCurrent, pushHistory]);
 
   const startJob = useCallback(
     (jobId: string) => {
@@ -54,11 +71,17 @@ export function useSyncJobChannel<TData>() {
         if (event.type === 'snapshot' && event.job.progress) {
           setProgress(event.job.progress.percent);
           setMessage(event.job.progress.message);
+          pushHistory('snapshot', `${event.job.status}: ${event.job.progress.message}`, event.at);
         }
 
         if (event.type === 'progress') {
           setProgress(event.progress.percent);
           setMessage(event.progress.message);
+          pushHistory(
+            `progress ${event.progress.percent}%`,
+            event.progress.message,
+            event.at,
+          );
         }
 
         if (event.type === 'result') {
@@ -66,17 +89,25 @@ export function useSyncJobChannel<TData>() {
           setLoading(false);
           setProgress(100);
           setMessage('completed');
+          pushHistory('completed', 'job completed', event.at);
           close();
         }
 
         if (event.type === 'error') {
           setResult({ ok: false, error: { code: 'JOB_FAILED', message: event.error } });
           setLoading(false);
+          pushHistory('error', event.error, event.at);
           close();
         }
 
         if (event.type === 'status' && event.status === 'failed') {
           setLoading(false);
+          pushHistory('status', event.status, event.at);
+          close();
+        }
+
+        if (event.type === 'status' && event.status !== 'failed') {
+          pushHistory('status', event.status, event.at);
           close();
         }
       };
@@ -86,7 +117,7 @@ export function useSyncJobChannel<TData>() {
         close();
       };
     },
-    [closeCurrent, setFailure],
+    [closeCurrent, pushHistory, setFailure],
   );
 
   return {
@@ -94,6 +125,7 @@ export function useSyncJobChannel<TData>() {
     progress,
     message,
     result,
+    history,
     queueJob,
     startJob,
     setFailure,

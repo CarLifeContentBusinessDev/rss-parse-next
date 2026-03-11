@@ -25,6 +25,8 @@ export function useProgramDetailQuery({ id, country, tablePreset }: UseProgramDe
   const queryClient = useQueryClient();
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [processingEpisodeId, setProcessingEpisodeId] = useState<number | null>(null);
+  const [processingProgram, setProcessingProgram] = useState(false);
+  const [processingProgramFromRss, setProcessingProgramFromRss] = useState(false);
   const [savingEpisodeId, setSavingEpisodeId] = useState<number | null>(null);
   const [deletingEpisodeId, setDeletingEpisodeId] = useState<number | null>(null);
 
@@ -108,6 +110,53 @@ export function useProgramDetailQuery({ id, country, tablePreset }: UseProgramDe
     },
   });
 
+  const reprocessProgramMutation = useMutation({
+    mutationFn: async () => {
+      if (!id) throw new Error('Program id is missing');
+
+      const response = await fetch(`/api/content/program/${encodeURIComponent(id)}/update`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          country,
+          tablePreset,
+        }),
+      });
+
+      return (await response.json()) as {
+        ok: boolean;
+        error?: { message: string };
+        data?: { uploadedCount: number; updatedSupabaseCount: number };
+      };
+    },
+  });
+
+  const reprocessProgramFromRssMutation = useMutation({
+    mutationFn: async (rssUrl: string) => {
+      if (!id) throw new Error('Program id is missing');
+
+      const response = await fetch(`/api/content/program/${encodeURIComponent(id)}/update-from-rss`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rssUrl,
+          country,
+          tablePreset,
+        }),
+      });
+
+      return (await response.json()) as {
+        ok: boolean;
+        error?: { message: string };
+        data?: { matchedEpisodes: number; uploadedCount: number; updatedSupabaseCount: number };
+      };
+    },
+  });
+
   const invalidateDetail = async () => {
     await queryClient.invalidateQueries({ queryKey: ['program-detail', id, country, tablePreset] });
   };
@@ -179,15 +228,69 @@ export function useProgramDetailQuery({ id, country, tablePreset }: UseProgramDe
     }
   };
 
+  const onReprocessProgram = async () => {
+    setProcessingProgram(true);
+    setActionMessage(null);
+
+    try {
+      const json = await reprocessProgramMutation.mutateAsync();
+      if (!json.ok) {
+        setActionMessage(json.error?.message ?? 'Program audio refresh failed');
+        return;
+      }
+
+      setActionMessage(
+        `Program audio refreshed (uploaded: ${json.data?.uploadedCount ?? 0}, updated: ${
+          json.data?.updatedSupabaseCount ?? 0
+        })`,
+      );
+      await invalidateDetail();
+    } catch (refreshError) {
+      const message = refreshError instanceof Error ? refreshError.message : 'Network error';
+      setActionMessage(message);
+    } finally {
+      setProcessingProgram(false);
+    }
+  };
+
+  const onReprocessProgramFromRss = async (rssUrl: string) => {
+    setProcessingProgramFromRss(true);
+    setActionMessage(null);
+
+    try {
+      const json = await reprocessProgramFromRssMutation.mutateAsync(rssUrl);
+      if (!json.ok) {
+        setActionMessage(json.error?.message ?? 'Program audio refresh from RSS failed');
+        return;
+      }
+
+      setActionMessage(
+        `Program audio refreshed from RSS (matched: ${json.data?.matchedEpisodes ?? 0}, uploaded: ${
+          json.data?.uploadedCount ?? 0
+        }, updated: ${json.data?.updatedSupabaseCount ?? 0})`,
+      );
+      await invalidateDetail();
+    } catch (refreshError) {
+      const message = refreshError instanceof Error ? refreshError.message : 'Network error';
+      setActionMessage(message);
+    } finally {
+      setProcessingProgramFromRss(false);
+    }
+  };
+
   return {
     loading: detailQuery.isPending || detailQuery.isFetching,
     error: detailQuery.error instanceof Error ? detailQuery.error.message : null,
     program: detailQuery.data?.program ?? null,
     episodes: detailQuery.data?.episodes ?? [],
     actionMessage,
+    processingProgram,
+    processingProgramFromRss,
     processingEpisodeId,
     savingEpisodeId,
     deletingEpisodeId,
+    onReprocessProgram,
+    onReprocessProgramFromRss,
     onReprocessEpisode,
     onSaveEpisode,
     onDeleteEpisode,

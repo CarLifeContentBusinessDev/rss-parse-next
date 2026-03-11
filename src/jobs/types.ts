@@ -1,6 +1,6 @@
 import { PartialSyncRuntimeOptions } from '@/config/syncRuntime';
 
-export type JobKind = 'rss' | 'excel';
+export type JobKind = 'rss' | 'excel' | 'audio-refresh' | 'audio-refresh-excel';
 export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
 
 export type JobProgress = {
@@ -21,7 +21,26 @@ export type ExcelJobPayload = {
   options?: PartialSyncRuntimeOptions;
 };
 
-export type JobPayload = RssJobPayload | ExcelJobPayload;
+export type AudioRefreshJobPayload = {
+  country: string;
+  tablePreset?: 'main' | 'test';
+  options?: PartialSyncRuntimeOptions;
+};
+
+export type AudioRefreshExcelJobPayload = {
+  filePath: string;
+  sheetName?: string;
+  headerSkip?: number;
+  country?: string;
+  tablePreset?: 'main' | 'test';
+  options?: PartialSyncRuntimeOptions;
+};
+
+export type JobPayload =
+  | RssJobPayload
+  | ExcelJobPayload
+  | AudioRefreshJobPayload
+  | AudioRefreshExcelJobPayload;
 
 export type JobRecord = {
   id: string;
