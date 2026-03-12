@@ -6,6 +6,7 @@ export type { RuntimeState, TablePreset };
 
 export function buildOptions(state: RuntimeState, sheetName: string, headerSkip: string) {
   const resolvedEpisodeLimit = Number(state.episodeLimit);
+  const resolvedDownloadLimit = Number(state.downloadLimit);
   const resolvedTables =
     state.tablePreset === 'main'
       ? MAIN_TABLES
@@ -25,7 +26,7 @@ export function buildOptions(state: RuntimeState, sheetName: string, headerSkip:
     programType: state.programType.trim().toLowerCase() === 'null' ? null : state.programType,
     episodeLimit: resolvedEpisodeLimit,
     downloadFiles: state.downloadFiles,
-    downloadLimit: resolvedEpisodeLimit,
+    downloadLimit: resolvedDownloadLimit,
     audioBitrate: state.audioBitrate,
     imageTargetMaxKb: Number(state.imageTargetMaxKb),
     keepLocalFiles: state.keepLocalFiles,

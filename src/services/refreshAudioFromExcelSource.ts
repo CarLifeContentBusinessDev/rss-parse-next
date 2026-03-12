@@ -21,6 +21,7 @@ type FeedItem = {
 };
 
 type ParsedFeed = {
+  title?: string;
   items: FeedItem[];
 };
 
@@ -50,17 +51,22 @@ type ExistingEpisode = {
   date: string | null;
 };
 
-const parser = new Parser();
+type ProgramRecord = {
+  id: number;
+  title: string;
+};
 
-function getField<T>(row: Record<string, unknown>, keys: string[]): T | undefined {
-  for (const key of keys) {
-    const value = row[key];
-    if (value !== undefined && value !== null && value !== '') {
-      return value as T;
-    }
-  }
-  return undefined;
-}
+type RowContext = {
+  rowNumber: number;
+  rank?: number;
+  rssUrl?: string;
+  programTitle?: string;
+};
+
+const parser = new Parser();
+const RANK_KEYS = ['rank', 'Rank', '전체 순위', '순위'];
+const RSS_KEYS = ['RSS', 'rss', 'rssUrl', 'RSS URL'];
+const PROGRAM_TITLE_KEYS = ['채널명', 'programTitle', 'title', 'Program Title'];
 
 function escapeCsv(value: string) {
   if (/[",\n]/.test(value)) {
@@ -72,14 +78,47 @@ function escapeCsv(value: string) {
 function toNumber(value: unknown): number | undefined {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'string' && value.trim() !== '') {
-    const parsed = Number(value);
+    const normalized = value.replace(/[^0-9.-]+/g, '');
+    const parsed = Number(normalized);
     return Number.isFinite(parsed) ? parsed : undefined;
   }
   return undefined;
 }
 
+function normalizeHeaderKey(value: string) {
+  return String(value)
+    .trim()
+    .replace(/\s+/g, '')
+    .toLowerCase();
+}
+
+function getField<T>(row: Record<string, unknown>, keys: string[]): T | undefined {
+  const entries = Object.entries(row);
+  const normalizedKeyMap = new Map(
+    entries.map(([key, value]) => [normalizeHeaderKey(key), value] as const),
+  );
+
+  for (const key of keys) {
+    const direct = row[key];
+    if (direct !== undefined && direct !== null && direct !== '') {
+      return direct as T;
+    }
+
+    const normalized = normalizedKeyMap.get(normalizeHeaderKey(key));
+    if (normalized !== undefined && normalized !== null && normalized !== '') {
+      return normalized as T;
+    }
+  }
+
+  return undefined;
+}
+
+function hasRankFilter(minRank: number | null, maxRank: number | null) {
+  return minRank !== null || maxRank !== null;
+}
+
 function isRankInRange(rank: number | undefined, minRank: number | null, maxRank: number | null) {
-  if (rank === undefined) return true;
+  if (rank === undefined) return false;
   if (minRank !== null && rank < minRank) return false;
   if (maxRank !== null && rank > maxRank) return false;
   return true;
@@ -92,9 +131,26 @@ function normalizeTitle(value: string | null | undefined) {
     .toLowerCase();
 }
 
+function normalizeLookupKey(value: string | null | undefined) {
+  return String(value ?? '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/&/g, ' and ')
+    .replace(/[^a-zA-Z0-9가-힣]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
+function isMeaningfulRow(row: Record<string, unknown>) {
+  return Object.values(row).some((value) => String(value ?? '').trim() !== '');
+}
+
 function pickFeedItem(episode: ExistingEpisode, feedItems: FeedItem[]) {
-  const normalizedTitle = normalizeTitle(episode.title);
-  const titleMatches = feedItems.filter((item) => normalizeTitle(item.title) === normalizedTitle);
+  const normalizedEpisodeTitle = normalizeTitle(episode.title);
+  const titleMatches = feedItems.filter(
+    (item) => normalizeTitle(item.title) === normalizedEpisodeTitle,
+  );
 
   if (titleMatches.length === 0) return null;
   if (titleMatches.length === 1) return titleMatches[0];
@@ -102,6 +158,47 @@ function pickFeedItem(episode: ExistingEpisode, feedItems: FeedItem[]) {
 
   const datedMatch = titleMatches.find((item) => formatDateYYMMDD(item.pubDate) === episode.date);
   return datedMatch ?? titleMatches[0];
+}
+
+function buildProgramLookup(programs: ProgramRecord[]) {
+  const exact = new Map<string, ProgramRecord>();
+
+  for (const program of programs) {
+    const key = normalizeLookupKey(program.title);
+    if (!key || exact.has(key)) continue;
+    exact.set(key, program);
+  }
+
+  return { exact, programs };
+}
+
+function resolveProgramMatch(
+  lookup: ReturnType<typeof buildProgramLookup>,
+  candidates: Array<string | null | undefined>,
+) {
+  const normalizedCandidates = candidates
+    .map((candidate) => normalizeLookupKey(candidate))
+    .filter((candidate): candidate is string => candidate.length > 0);
+
+  for (const candidate of normalizedCandidates) {
+    const exactMatch = lookup.exact.get(candidate);
+    if (exactMatch) return exactMatch;
+  }
+
+  for (const candidate of normalizedCandidates) {
+    const fuzzyMatches = lookup.programs.filter((program) => {
+      const programKey = normalizeLookupKey(program.title);
+      return (
+        programKey === candidate ||
+        programKey.includes(candidate) ||
+        candidate.includes(programKey)
+      );
+    });
+
+    if (fuzzyMatches.length === 1) return fuzzyMatches[0];
+  }
+
+  return null;
 }
 
 export async function refreshAudioFromExcelSourceBuffer({
@@ -137,9 +234,41 @@ export async function refreshAudioFromExcelSourceBuffer({
   }
 
   const resolvedHeaderSkip = headerSkip ?? config.excelHeaderSkip;
-  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+  const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
     range: resolvedHeaderSkip,
   });
+  const meaningfulRows = rawRows
+    .map((row, index) => ({ row, rowNumber: index + resolvedHeaderSkip + 1 }))
+    .filter(({ row }) => isMeaningfulRow(row));
+
+  const filteredRows: Array<{ row: Record<string, unknown>; context: RowContext }> = [];
+  const enforceRankFilter = hasRankFilter(config.minRank, config.maxRank);
+
+  for (const { row, rowNumber } of meaningfulRows) {
+    const rank = toNumber(getField<number | string>(row, RANK_KEYS));
+    const rssUrl = getField<string>(row, RSS_KEYS);
+    const programTitle = getField<string>(row, PROGRAM_TITLE_KEYS);
+
+    if (enforceRankFilter && !isRankInRange(rank, config.minRank, config.maxRank)) {
+      continue;
+    }
+
+    filteredRows.push({
+      row,
+      context: {
+        rowNumber,
+        rank,
+        rssUrl,
+        programTitle,
+      },
+    });
+  }
+
+  const { data: programs, error: programListError } = await supabase
+    .from(tables.programs)
+    .select('id,title');
+  if (programListError) throw programListError;
+  const programLookup = buildProgramLookup(programs ?? []);
 
   let succeededRows = 0;
   let failedRows = 0;
@@ -147,29 +276,15 @@ export async function refreshAudioFromExcelSourceBuffer({
   let updatedSupabaseCount = 0;
   const failures: Array<{ row: number; rssUrl: string | null; message: string }> = [];
 
-  for (let index = 0; index < rows.length; index += 1) {
-    const row = rows[index] ?? {};
-    const rank = toNumber(getField<number | string>(row, ['rank', 'Rank', '전체 순위', '순위']));
-    const rssUrl = getField<string>(row, ['RSS', 'rss', 'rssUrl', 'RSS URL']);
-    const programTitle = getField<string>(row, [
-      '채널명',
-      'programTitle',
-      'title',
-      'Program Title',
-    ]);
-
-    if (!isRankInRange(rank, config.minRank, config.maxRank)) {
-      onProgress?.(
-        15 + Math.round(((index + 1) / Math.max(rows.length, 1)) * 75),
-        `row ${index + 1}/${rows.length} filtered by rank`,
-      );
-      continue;
-    }
+  for (let index = 0; index < filteredRows.length; index += 1) {
+    const { context } = filteredRows[index];
+    const rssUrl = context.rssUrl;
+    const programTitle = context.programTitle;
 
     if (!rssUrl || !programTitle) {
       failedRows += 1;
       failures.push({
-        row: index + resolvedHeaderSkip + 1,
+        row: context.rowNumber,
         rssUrl: rssUrl ?? null,
         message: 'Missing required fields: RSS/programTitle',
       });
@@ -178,26 +293,27 @@ export async function refreshAudioFromExcelSourceBuffer({
 
     try {
       onProgress?.(
-        15 + Math.round(((index + 1) / Math.max(rows.length, 1)) * 75),
-        `matching source ${index + 1}/${rows.length}: ${programTitle}`,
+        15 + Math.round(((index + 1) / Math.max(filteredRows.length, 1)) * 75),
+        `matching source ${index + 1}/${filteredRows.length}: ${programTitle}`,
       );
 
-      const { data: program, error: programError } = await supabase
-        .from(tables.programs)
-        .select('id,title')
-        .eq('title', String(programTitle))
-        .maybeSingle();
-      if (programError) throw programError;
-      if (!program) throw new Error(`Program not found: ${programTitle}`);
+      const program = resolveProgramMatch(programLookup, [programTitle]);
+      const feed = (await retryAsync(() => parser.parseURL(String(rssUrl)), 2, 1500)) as ParsedFeed;
+      const resolvedProgram = program ?? resolveProgramMatch(programLookup, [feed.title]);
+
+      if (!resolvedProgram) {
+        throw new Error(
+          `Program not found: ${programTitle}${feed.title ? ` (rss title: ${feed.title})` : ''}`,
+        );
+      }
 
       const { data: episodes, error: episodeError } = await supabase
         .from(tables.episodes)
         .select('id,title,date')
-        .eq('program_id', program.id)
+        .eq('program_id', resolvedProgram.id)
         .order('date', { ascending: false });
       if (episodeError) throw episodeError;
 
-      const feed = (await retryAsync(() => parser.parseURL(String(rssUrl)), 2, 1500)) as ParsedFeed;
       const matchedEpisodes = (episodes ?? [])
         .map((episode) => {
           const feedItem = pickFeedItem(episode, feed.items ?? []);
@@ -214,17 +330,17 @@ export async function refreshAudioFromExcelSourceBuffer({
         .filter((episode): episode is NonNullable<typeof episode> => episode !== null);
 
       if (matchedEpisodes.length === 0) {
-        throw new Error(`No RSS enclosure matches found for program: ${programTitle}`);
+        throw new Error(`No RSS enclosure matches found for program: ${resolvedProgram.title}`);
       }
 
-      const baseDir = getDownloadsCompressDir(sanitizeFileName(program.title));
+      const baseDir = getDownloadsCompressDir(sanitizeFileName(resolvedProgram.title));
       const summary = await downloadEpisodeFiles(
         baseDir,
-        program.id,
+        resolvedProgram.id,
         config.countryCode,
         matchedEpisodes,
         null,
-        program.title,
+        resolvedProgram.title,
         config,
       );
 
@@ -234,7 +350,7 @@ export async function refreshAudioFromExcelSourceBuffer({
     } catch (error) {
       failedRows += 1;
       failures.push({
-        row: index + resolvedHeaderSkip + 1,
+        row: context.rowNumber,
         rssUrl: String(rssUrl),
         message: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -251,7 +367,7 @@ export async function refreshAudioFromExcelSourceBuffer({
   ].join('\n');
 
   return {
-    totalRows: rows.length,
+    totalRows: filteredRows.length,
     succeededRows,
     failedRows,
     uploadedCount,
