@@ -13,6 +13,16 @@ import { formatDateYYMMDD, formatDuration, retryAsync } from '@/utils/duration';
 import { PartialSyncRuntimeOptions, resolveSyncOptions } from '@/config/syncRuntime';
 import * as XLSX from 'xlsx';
 import { getDownloadsCompressDir } from '@/lib/temp-paths';
+import {
+  EXCEL_CATEGORY_ID_KEYS,
+  EXCEL_ORDER_POPULAR_KEYS,
+  EXCEL_PROGRAM_TITLE_KEYS,
+  EXCEL_RANK_KEYS,
+  EXCEL_RSS_KEYS,
+  EXCEL_SUBTITLE_KEYS,
+  getExcelField,
+  toExcelNumber,
+} from '@/services/excelHeaders';
 
 type FeedItem = {
   title?: string;
@@ -60,25 +70,6 @@ type ExcelRunOptions = {
 const parser = new Parser();
 const SKIP_DUPLICATES = true;
 
-function toNumber(value: unknown): number | undefined {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string' && value.trim() !== '') {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : undefined;
-  }
-  return undefined;
-}
-
-function getField<T>(row: Record<string, unknown>, keys: string[]): T | undefined {
-  for (const key of keys) {
-    const value = row[key];
-    if (value !== undefined && value !== null && value !== '') {
-      return value as T;
-    }
-  }
-  return undefined;
-}
-
 function escapeCsv(value: string) {
   if (/[",\n]/.test(value)) {
     return `"${value.replace(/"/g, '""')}"`;
@@ -87,7 +78,7 @@ function escapeCsv(value: string) {
 }
 
 function isRankInRange(rank: number | undefined, minRank: number | null, maxRank: number | null) {
-  if (rank === undefined) return true;
+  if (rank === undefined) return false;
   if (minRank !== null && rank < minRank) return false;
   if (maxRank !== null && rank > maxRank) return false;
   return true;
@@ -292,7 +283,7 @@ export async function syncPodcastFromExcelBuffer(
 
   for (let index = 0; index < rows.length; index += 1) {
     const row = rows[index] ?? {};
-    const rank = toNumber(getField<number | string>(row, ['rank', 'Rank', '전체 순위', '순위']));
+    const rank = toExcelNumber(getExcelField<number | string>(row, EXCEL_RANK_KEYS));
 
     if (!isRankInRange(rank, config.minRank, config.maxRank)) {
       const percent = 15 + Math.round(((index + 1) / Math.max(rows.length, 1)) * 75);
@@ -300,13 +291,8 @@ export async function syncPodcastFromExcelBuffer(
       continue;
     }
 
-    const rssUrl = getField<string>(row, ['RSS', 'rss', 'rssUrl', 'RSS URL']);
-    const programTitle = getField<string>(row, [
-      '채널명',
-      'programTitle',
-      'title',
-      'Program Title',
-    ]);
+    const rssUrl = getExcelField<string>(row, EXCEL_RSS_KEYS);
+    const programTitle = getExcelField<string>(row, EXCEL_PROGRAM_TITLE_KEYS);
 
     if (!rssUrl || !programTitle) {
       failedRows += 1;
@@ -318,15 +304,21 @@ export async function syncPodcastFromExcelBuffer(
       continue;
     }
 
-    const subtitle = getField<string>(row, ['제작사', '소제목', 'subtitle', 'Subtitle']) ?? null;
-    const categoryId = getField<string | number>(row, [
-      '로컬 카테고리 ID',
-      'categoryId',
-      'Category ID',
-    ]);
-    const orderPopular = toNumber(
-      getField<number | string>(row, ['테마 순위', 'orderPopular', '부모 순위', 'Popular Order']),
+    const subtitle = getExcelField<string>(row, EXCEL_SUBTITLE_KEYS) ?? null;
+    const categoryId = getExcelField<string | number>(row, EXCEL_CATEGORY_ID_KEYS);
+    const orderPopular = toExcelNumber(
+      getExcelField<number | string>(row, EXCEL_ORDER_POPULAR_KEYS),
     );
+
+    if (config.syncThemes && orderPopular === undefined) {
+      failedRows += 1;
+      failures.push({
+        row: index + headerSkip + 1,
+        rssUrl: String(rssUrl),
+        message: `Missing required field for theme mapping: orderPopular (themeId=${config.themeId}, table=${config.tables.themesPrograms})`,
+      });
+      continue;
+    }
 
     try {
       const summary = await syncPodcastFromExcel({

@@ -106,9 +106,11 @@ export function useSyncJobChannel<TData>() {
           close();
         }
 
-        if (event.type === 'status' && event.status !== 'failed') {
+        if (
+          event.type === 'status' &&
+          (event.status === 'queued' || event.status === 'running')
+        ) {
           pushHistory('status', event.status, event.at);
-          close();
         }
       };
 

@@ -212,6 +212,30 @@ type DownloadSummary = {
   updatedSupabaseCount: number;
 };
 
+function toErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function summarizeRejectedTasks(
+  settled: PromiseSettledResult<void>[],
+  prefix: string,
+  maxDetails = 3,
+) {
+  const rejected = settled.filter(
+    (item): item is PromiseRejectedResult => item.status === 'rejected',
+  );
+  if (rejected.length === 0) return null;
+
+  const details = rejected
+    .slice(0, maxDetails)
+    .map((item) => toErrorMessage(item.reason).replace(/\s+/g, ' ').trim())
+    .join(' | ');
+  const remainder =
+    rejected.length > maxDetails ? ` | and ${rejected.length - maxDetails} more` : '';
+
+  return `${prefix}: ${rejected.length}${details ? ` | ${details}${remainder}` : ''}`;
+}
+
 export async function downloadEpisodeFiles(
   baseDir: string,
   programId: number,
@@ -283,7 +307,12 @@ export async function downloadEpisodeFiles(
       if (error) throw error;
       if (data && data.length > 0) updatedSupabaseCount += data.length;
     }
-  });
+  }).map((task, index) =>
+    task.catch((error) => {
+      const episodeTitle = episodes[index]?.title || 'untitled';
+      throw new Error(`episode "${episodeTitle}": ${toErrorMessage(error)}`);
+    }),
+  );
 
   if (programImage) {
     tasks.push(
@@ -311,14 +340,16 @@ export async function downloadEpisodeFiles(
         } finally {
           cleanupLocalFileIfNeeded(imagePath, options);
         }
-      })(),
+      })().catch((error) => {
+        throw new Error(`program image "${programTitle}": ${toErrorMessage(error)}`);
+      }),
     );
   }
 
   const settled = await Promise.allSettled(tasks);
-  const rejected = settled.filter((item) => item.status === 'rejected');
-  if (rejected.length > 0) {
-    throw new Error(`Download/upload tasks failed: ${rejected.length}`);
+  const rejectedSummary = summarizeRejectedTasks(settled, 'Download/upload tasks failed');
+  if (rejectedSummary) {
+    throw new Error(rejectedSummary);
   }
 
   cleanupDirIfEmpty(baseDir, options);
@@ -424,12 +455,20 @@ export async function refreshEpisodeAudiosFromDb(
     } finally {
       cleanupLocalFileIfNeeded(m4aPath, options);
     }
-  });
+  }).map((task, index) =>
+    task.catch((error) => {
+      const episodeTitle = episodes[index]?.title || 'untitled';
+      throw new Error(`episode "${episodeTitle}": ${toErrorMessage(error)}`);
+    }),
+  );
 
   const settled = await Promise.allSettled(tasks);
-  const rejected = settled.filter((item) => item.status === 'rejected');
-  if (rejected.length > 0) {
-    throw new Error(`Audio refresh tasks failed: ${rejected.length}`);
+  const rejectedSummary = summarizeRejectedTasks(
+    settled,
+    'Audio refresh tasks failed',
+  );
+  if (rejectedSummary) {
+    throw new Error(rejectedSummary);
   }
 
   cleanupDirIfEmpty(baseDir, options);

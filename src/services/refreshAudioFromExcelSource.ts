@@ -10,6 +10,13 @@ import {
   sanitizeFileName,
   validateSyncEnv,
 } from '@/services/syncPodcastCommon';
+import {
+  EXCEL_PROGRAM_TITLE_KEYS,
+  EXCEL_RANK_KEYS,
+  EXCEL_RSS_KEYS,
+  getExcelField,
+  toExcelNumber,
+} from '@/services/excelHeaders';
 import { formatDateYYMMDD, retryAsync } from '@/utils/duration';
 
 type TablePreset = 'main' | 'test';
@@ -64,53 +71,12 @@ type RowContext = {
 };
 
 const parser = new Parser();
-const RANK_KEYS = ['rank', 'Rank', '전체 순위', '순위'];
-const RSS_KEYS = ['RSS', 'rss', 'rssUrl', 'RSS URL'];
-const PROGRAM_TITLE_KEYS = ['채널명', 'programTitle', 'title', 'Program Title'];
 
 function escapeCsv(value: string) {
   if (/[",\n]/.test(value)) {
     return `"${value.replace(/"/g, '""')}"`;
   }
   return value;
-}
-
-function toNumber(value: unknown): number | undefined {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string' && value.trim() !== '') {
-    const normalized = value.replace(/[^0-9.-]+/g, '');
-    const parsed = Number(normalized);
-    return Number.isFinite(parsed) ? parsed : undefined;
-  }
-  return undefined;
-}
-
-function normalizeHeaderKey(value: string) {
-  return String(value)
-    .trim()
-    .replace(/\s+/g, '')
-    .toLowerCase();
-}
-
-function getField<T>(row: Record<string, unknown>, keys: string[]): T | undefined {
-  const entries = Object.entries(row);
-  const normalizedKeyMap = new Map(
-    entries.map(([key, value]) => [normalizeHeaderKey(key), value] as const),
-  );
-
-  for (const key of keys) {
-    const direct = row[key];
-    if (direct !== undefined && direct !== null && direct !== '') {
-      return direct as T;
-    }
-
-    const normalized = normalizedKeyMap.get(normalizeHeaderKey(key));
-    if (normalized !== undefined && normalized !== null && normalized !== '') {
-      return normalized as T;
-    }
-  }
-
-  return undefined;
 }
 
 function hasRankFilter(minRank: number | null, maxRank: number | null) {
@@ -245,9 +211,9 @@ export async function refreshAudioFromExcelSourceBuffer({
   const enforceRankFilter = hasRankFilter(config.minRank, config.maxRank);
 
   for (const { row, rowNumber } of meaningfulRows) {
-    const rank = toNumber(getField<number | string>(row, RANK_KEYS));
-    const rssUrl = getField<string>(row, RSS_KEYS);
-    const programTitle = getField<string>(row, PROGRAM_TITLE_KEYS);
+    const rank = toExcelNumber(getExcelField<number | string>(row, EXCEL_RANK_KEYS));
+    const rssUrl = getExcelField<string>(row, EXCEL_RSS_KEYS);
+    const programTitle = getExcelField<string>(row, EXCEL_PROGRAM_TITLE_KEYS);
 
     if (enforceRankFilter && !isRankInRange(rank, config.minRank, config.maxRank)) {
       continue;
