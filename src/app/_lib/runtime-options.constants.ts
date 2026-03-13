@@ -26,7 +26,7 @@ export const defaultRuntimeState: RuntimeState = {
   episodeLimit: '4',
   downloadFiles: true,
   downloadLimit: '10',
-  audioBitrate: '128k',
+  audioBitrate: '192k',
   imageTargetMaxKb: '50',
   keepLocalFiles: false,
   minRank: '60',

@@ -49,6 +49,7 @@ const audioBitrateOptions = [
   { value: '96k', label: '96k' },
   { value: '128k', label: '128k' },
   { value: '192k', label: '192k' },
+  { value: '256k', label: '256k' },
 ];
 
 const baseFields: Array<{ key: RuntimeStringFieldKey; label: string; type?: 'text' | 'number' }> =

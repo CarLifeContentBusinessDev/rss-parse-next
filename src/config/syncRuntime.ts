@@ -35,7 +35,7 @@ export const DEFAULT_SYNC_OPTIONS: SyncRuntimeOptions = {
   episodeLimit: 4,
   downloadFiles: true,
   downloadLimit: 10,
-  audioBitrate: '128k',
+  audioBitrate: '192k',
   imageTargetMaxKb: 50,
   keepLocalFiles: false,
   excelHeaderSkip: 2,
